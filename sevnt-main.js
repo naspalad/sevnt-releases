@@ -32,6 +32,71 @@ const electronMod    = require('electron');
 const OrigBW         = electronMod.BrowserWindow;
 const fs             = require('fs');
 
+// ==========================================
+// SEVNT PERSISTENT STARTUP LOGGER
+// ==========================================
+const __sevntTracePath = require('path').join(
+  require('os').tmpdir(),
+  'sevnt-startup-trace.log'
+);
+
+function __sevntPersistentTrace(label, detail = '') {
+  try {
+    require('fs').appendFileSync(
+      __sevntTracePath,
+      `${new Date().toISOString()} [SEVNT-TRACE] ${label} ${String(detail)}\n`
+    );
+  } catch (_) {}
+}
+
+__sevntPersistentTrace('MAIN ENTRY', `${process.platform}/${process.arch}`);
+__sevntPersistentTrace('ARGV', JSON.stringify(process.argv));
+
+process.on('beforeExit', code => {
+  __sevntPersistentTrace('PROCESS beforeExit', code);
+});
+
+process.on('exit', code => {
+  __sevntPersistentTrace('PROCESS exit', code);
+});
+
+process.on('uncaughtExceptionMonitor', error => {
+  __sevntPersistentTrace('UNCAUGHT', error.stack || error);
+});
+
+app.on('before-quit', () => {
+  __sevntPersistentTrace('APP before-quit');
+});
+
+app.on('will-quit', () => {
+  __sevntPersistentTrace('APP will-quit');
+});
+
+app.on('window-all-closed', () => {
+  __sevntPersistentTrace('APP window-all-closed');
+});
+
+app.on('browser-window-created', (_event, win) => {
+  __sevntPersistentTrace('BROWSER WINDOW CREATED', win.id);
+
+  win.on('closed', () => {
+    __sevntPersistentTrace('BROWSER WINDOW CLOSED', win.id);
+  });
+});
+
+const __sevntOriginalQuit = app.quit.bind(app);
+app.quit = (...args) => {
+  __sevntPersistentTrace('app.quit CALLED', new Error().stack);
+  return __sevntOriginalQuit(...args);
+};
+
+const __sevntOriginalExit = app.exit.bind(app);
+app.exit = (...args) => {
+  __sevntPersistentTrace('app.exit CALLED', new Error().stack);
+  return __sevntOriginalExit(...args);
+};
+
+
 // â•â• 2b. Auto-bypass license window when SEVNT cache is valid â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //
 // SOCL main.js always creates a license BrowserWindow at startup.
@@ -178,4 +243,5 @@ require('./src/main.js');
     _im.handle = _origHandle; // restore: our later registrations behave normally
   }
 }
+
 
