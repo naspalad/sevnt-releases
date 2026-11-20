@@ -1,6 +1,6 @@
-// SEVNT Studio — Main Process Entry Point
+﻿// SEVNT Studio â€” Main Process Entry Point
 // Wraps the original SOCL main.js, adding:
-//   1. BrowserWindow monkey-patch → redirects SOCL UI to SEVNTY App React UI
+//   1. BrowserWindow monkey-patch â†’ redirects SOCL UI to SEVNTY App React UI
 //   2. SEVNT Studio IPC handlers (license, folder, caption, etc.)
 //   3. Mobile Companion IPC handlers
 //   4. Local engine (Python) supervision
@@ -13,7 +13,7 @@
 
 'use strict';
 
-// ══ 1. userData isolation (MUST be first — before any module reads userData) ══
+// â•â• 1. userData isolation (MUST be first â€” before any module reads userData) â•â•
 const { app } = require('electron');
 const path   = require('path');
 
@@ -21,18 +21,18 @@ if (!app.isPackaged) {
   app.setPath('userData', path.join(app.getPath('appData'), 'SEVNT_Dev'));
 } else {
   // Packaged build: the original main sets the app name to "SOCL Visuals Studio", which would make Electron use
-  // %APPDATA%/SOCL Visuals Studio — the profile of a separately installed SOCL app (settings, licence cache, downloaded runtimes).
+  // %APPDATA%/SOCL Visuals Studio â€” the profile of a separately installed SOCL app (settings, licence cache, downloaded runtimes).
   // SEVNT must have its own data folder (see AUDIT/18_APP_IDENTITY_CHECK.md).
   app.setPath('userData', path.join(app.getPath('appData'), 'SEVNT Studio'));
 }
 
-// ══ 2. (No BrowserWindow redirect — SOCL loads its own UI) ══════════════════
+// â•â• 2. (No BrowserWindow redirect â€” SOCL loads its own UI) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 const electronMod    = require('electron');
 const OrigBW         = electronMod.BrowserWindow;
 const fs             = require('fs');
 
-// ══ 2b. Auto-bypass license window when SEVNT cache is valid ══════════════════
+// â•â• 2b. Auto-bypass license window when SEVNT cache is valid â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //
 // SOCL main.js always creates a license BrowserWindow at startup.
 // If SEVNT's license_status.json says valid:true, we auto-fire notifyActivated()
@@ -66,42 +66,42 @@ app.on('browser-window-created', (_e, win) => {
     const url = win.webContents.getURL();
     if (!url.includes('license-window')) return;
     if (!(await _sevntLicenseValid())) return;
-    // License already valid — auto-notify so SOCL closes the window
+    // License already valid â€” auto-notify so SOCL closes the window
     win.webContents.executeJavaScript(
       'if (window.licenseAPI && window.licenseAPI.notifyActivated) window.licenseAPI.notifyActivated();'
     ).catch(() => {});
   });
 });
 
-// ══ 3. Register SEVNT Studio IPC handlers ════════════════════════════════════
+// â•â• 3. Register SEVNT Studio IPC handlers â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 require('./src/sevnt-studio-ipc');
 
-// ══ 3b. Telegram delivery of exported clips (user's own bot) ═════════════════
+// â•â• 3b. Telegram delivery of exported clips (user's own bot) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 require('./src/sevnt-telegram-ipc');
 
-// ══ 3c. History: file checks + delete to the Recycle Bin ═══════════════════
+// â•â• 3c. History: file checks + delete to the Recycle Bin â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 require('./src/sevnt-history-ipc');
 
-// ══ 3d. Settings > Disk Usage (measure + remove re-downloadable data) ══════
+// â•â• 3d. Settings > Disk Usage (measure + remove re-downloadable data) â•â•â•â•â•â•
 require('./src/sevnt-diskusage-ipc');
 
-// ══ 4. Register Mobile Companion IPC handlers ════════════════════════════════
+// â•â• 4. Register Mobile Companion IPC handlers â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const { registerMobileIpc, setMainWindow } = require('./src/sevnt-mobile-ipc');
 registerMobileIpc();
 
-// ══ 5. Capture main window reference when renderer signals ready ══════════════
+// â•â• 5. Capture main window reference when renderer signals ready â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const { ipcMain } = require('electron');
 ipcMain.once('sevnt:mainWindowReady', (event) => {
   const win = electronMod.BrowserWindow.fromWebContents(event.sender);
   if (win) setMainWindow(win);
 });
 
-// ══ 6. Local engine (Python, bundled with the app) ═══════════════════════════
+// â•â• 6. Local engine (Python, bundled with the app) â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // Owned by the EngineSupervisor: dynamic loopback port, per-launch token, health check, bounded restart,
 // graceful shutdown, no orphan processes. No dependency on any folder outside this app.
 const engineSupervisor = require('./src/sevnt-engine').init(electronMod);
 
-// ══ 7. Cleanup on quit ════════════════════════════════════════════════════════
+// â•â• 7. Cleanup on quit â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 app.on('before-quit', async () => {
   try {
     const { stopGateway } = require('./src/sevnt-mobile-ipc');
@@ -109,7 +109,7 @@ app.on('before-quit', async () => {
   } catch { /* graceful cleanup only */ }
 });
 
-// ══ 8. Load original SOCL main process (after all patches are in place) ══════
+// â•â• 8. Load original SOCL main process (after all patches are in place) â•â•â•â•â•â•
 //
 // SOCL src/main.js registers 'license:activate' twice internally (obfuscated bug).
 // Electron throws on duplicate ipcMain.handle() calls. Patch handle() so that a
@@ -120,12 +120,62 @@ app.on('before-quit', async () => {
   const _im = ipcMain;
   const _origHandle = _im.handle.bind(_im);
   _im.handle = function patchedHandle(channel, listener) {
-    try { _im.removeHandler(channel); } catch { /* not yet registered — that's fine */ }
+    try { _im.removeHandler(channel); } catch { /* not yet registered â€” that's fine */ }
     return _origHandle(channel, listener);
   };
   try {
-    require('./src/main.js');
+    
+// ==========================================
+// SEVNT MACOS STARTUP DIAGNOSTIC
+// Temporary diagnostic
+// ==========================================
+
+console.error('[SEVNT-TRACE] Main entry loaded:', process.platform, process.arch);
+
+const originalQuit = app.quit.bind(app);
+app.quit = (...args) => {
+  console.error('[SEVNT-TRACE] app.quit() CALLED');
+  console.error(new Error('QUIT STACK').stack);
+  return originalQuit(...args);
+};
+
+const originalExit = app.exit.bind(app);
+app.exit = (...args) => {
+  console.error('[SEVNT-TRACE] app.exit() CALLED', args);
+  console.error(new Error('EXIT STACK').stack);
+  return originalExit(...args);
+};
+
+app.on('before-quit', () => {
+  console.error('[SEVNT-TRACE] EVENT: before-quit');
+});
+
+app.on('will-quit', () => {
+  console.error('[SEVNT-TRACE] EVENT: will-quit');
+});
+
+app.on('window-all-closed', () => {
+  console.error('[SEVNT-TRACE] EVENT: window-all-closed');
+});
+
+app.on('browser-window-created', (_event, win) => {
+  console.error('[SEVNT-TRACE] BrowserWindow CREATED:', win.id);
+  win.on('closed', () => {
+    console.error('[SEVNT-TRACE] BrowserWindow CLOSED:', win.id);
+  });
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[SEVNT-TRACE] UNCAUGHT EXCEPTION:', error.stack || error);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[SEVNT-TRACE] UNHANDLED REJECTION:', reason);
+});
+
+require('./src/main.js');
   } finally {
     _im.handle = _origHandle; // restore: our later registrations behave normally
   }
 }
+
