@@ -96,6 +96,34 @@ jobs:
       - name: Test macOS App UI & Runtime
         run: npx playwright test tests/mac-test.spec.js
 
+      - name: Collect SEVNT Startup Trace
+        if: always()
+        shell: bash
+        run: |
+          TRACE_DIR="$(node -p "require('os').tmpdir()")"
+          TRACE_FILE="$TRACE_DIR/sevnt-startup-trace.log"
+          OUTPUT="sevnt-startup-trace-${{ matrix.arch }}.log"
+
+          echo "Architecture: ${{ matrix.arch }}"
+          echo "Trace directory: $TRACE_DIR"
+
+          if [ -f "$TRACE_FILE" ]; then
+            cp "$TRACE_FILE" "$OUTPUT"
+            echo "STARTUP TRACE FOUND"
+            cat "$OUTPUT"
+          else
+            echo "STARTUP TRACE NOT FOUND" | tee "$OUTPUT"
+            echo "Expected path: $TRACE_FILE" | tee -a "$OUTPUT"
+          fi
+
+      - name: Upload SEVNT Startup Trace
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEVNT-Startup-Trace-${{ matrix.arch }}
+          path: sevnt-startup-trace-${{ matrix.arch }}.log
+          if-no-files-found: error
+
       - name: Upload macOS Test Screenshot
         if: always()
         uses: actions/upload-artifact@v4
