@@ -1,0 +1,36 @@
+// Live preview decision for Blur BG + crop (live-framing.js plan) and renderer's formatForAspect rule.
+'use strict';
+const fs = require('fs'); const path = require('path'); const vm = require('vm');
+const LF = require('../src/live-framing.js');
+let pass = 0, fail = 0;
+const ok = (c, n) => { if (c) { pass++; console.log('  PASS ' + n); } else { fail++; console.log('  FAIL ' + n); } };
+console.log('blur crop: live preview plan and format rule');
+const out = { format: 'blur', ratio: 9 / 16 };
+const base = { srcVideo: 'C:/x/source.mp4', start: 10 };
+const same = { mainRatio: 9 / 16, kind: 'dashboard' };
+ok(LF.plan({ ...base }, out, same).use === false, 'blur, no crop, file is 9:16: file shown as is');
+ok(LF.plan({ ...base }, out, { mainRatio: 16 / 9, kind: 'dashboard' }).use === true, 'blur, no crop, file has another shape: live blur view');
+let p = LF.plan({ ...base, cropAspect: '16:9', cropScale: 1, cropX: 50, cropY: 50 }, out, same);
+ok(p.use === false, 'blur + crop already baked into the file: file shown as is');
+p = LF.plan({ ...base, cropAspect: '1:1', cropScale: 0.8, cropX: 30, cropY: 50, framePending: true }, out, same);
+ok(p.use === true && p.mode === 'blur' && p.bc && p.bc.aspect === '1:1', 'blur + crop being baked: live blur view carries the crop');
+p = LF.plan({ ...base, cropAspect: 'free', cropRect: { x: 0.1, y: 0.2, w: 0.5, h: 0.6 }, framePending: true }, out, same);
+ok(p.use === true && p.bc && p.bc.aspect === 'free' && p.bc.rect.w === 0.5, 'blur + free rectangle: carried to the live view');
+p = LF.plan({ ...base, cropAspect: '9:16', framePending: true }, { format: 'face', ratio: 9 / 16 }, same);
+ok(!p.bc, 'non-blur formats do not get the blur crop');
+const crop = { ...base, cropAspect: '1:1', cropScale: 1, cropX: 50, cropY: 50 };
+const sig = LF.blurSig(crop);
+ok(sig && LF.blurSig({ ...base }) === '', 'blurSig: fingerprint for a crop, empty without one');
+ok(LF.plan({ ...crop, frameSigFile: sig }, out, same).use === false, 'dashboard: file already carries this crop -> no live decode');
+ok(LF.plan({ ...crop, frameSigFile: 'old' }, out, same).use === true, 'dashboard: file carries an OLD crop -> live view');
+ok(LF.plan({ ...crop, previewOnly: true }, out, same).use === true, 'dashboard: light preview with a saved crop (not baked) -> live view');
+ok(LF.plan({ ...crop }, out, { mainRatio: 9 / 16, kind: 'editor' }).use === true, 'editor: clean plate without the crop -> live view');
+ok(LF.plan({ ...crop, frameSigRaw: sig }, out, { mainRatio: 9 / 16, kind: 'editor' }).use === false, 'editor: plate already carries the crop -> no live decode');
+// formatForAspect rule, cut out of renderer.js
+const src = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
+const m = /^function formatForAspect\b[\s\S]*?^}\r?\n/m.exec(src);
+const ctx = {}; vm.createContext(ctx); vm.runInContext(m[0], ctx);
+ok(['9:16', '1:1', '16:9', 'free', null].every((a) => ctx.formatForAspect(a, 'blur') === 'blur'), 'Blur stays Blur for every crop ratio');
+ok(ctx.formatForAspect('16:9', 'face') === 'landscape' && ctx.formatForAspect('1:1', 'face') === 'square' && ctx.formatForAspect(null, 'face') === 'face', 'other formats behave as before');
+ok(ctx.formatForAspect('9:16', 'landscape') === 'face' && ctx.formatForAspect('9:16', 'square') === 'face' && ctx.formatForAspect('free', 'landscape') === 'landscape', 'a 9:16 crop is a portrait output (was: kept Landscape/Square); free keeps the format');
+console.log('Results: ' + pass + ' passed, ' + fail + ' failed'); process.exit(fail ? 1 : 0);

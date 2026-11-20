@@ -1,0 +1,54 @@
+﻿node_modules/
+release/
+dist/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
+
+# Platform-specific bundled runtime
+build/engine-runtime/
+
+# Local secrets and credentials
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.json
+credentials.json
+
+# Internal archives and checkpoints
+*.zip
+LICENSE_SYSTEM_CHECKPOINT.md
+
+# Internal audits and generated analysis
+.claude/
+AUDIT/
+audit-context/
+graphify-out/
+.graphifyignore
+
+# Design references and working materials
+reference/
+logo icon baru/
+mobile companion design/
+new caption animation/
+
+# Internal development skills
+sevnt-ui-fidelity-skill/
+
+
+# Local secret modules - never commit
+/src/secrets.js
+/src/sevnt-secrets.js
+
+# Local license configuration and backup files
+/src/license/config.local.js
+*.bak
+*.backup*

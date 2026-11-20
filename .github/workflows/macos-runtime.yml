@@ -1,0 +1,98 @@
+﻿name: Build SEVNT macOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "engine/**"
+      - "scripts/**"
+      - "src/**"
+      - "package.json"
+      - "electron-builder.yml"
+      - ".github/workflows/macos-runtime.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: Build macOS (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: arm64
+          - runner: macos-15-intel
+            arch: x64
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install standalone Python
+        run: |
+          uv python install 3.11
+          PY_EXE="$(uv python find --managed-python 3.11)"
+          PY_HOME="$("$PY_EXE" -c 'import sys; print(sys.prefix)')"
+          OUT="build/engine-runtime/darwin-${{ matrix.arch }}"
+
+          echo "Python: $PY_EXE"
+          echo "Prefix: $PY_HOME"
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp -a "$PY_HOME/." "$OUT/"
+
+          if [ ! -x "$OUT/bin/python3" ]; then
+            PY_BIN="$(find "$OUT/bin" -maxdepth 1 -type f -name 'python3.*' | head -n 1)"
+            test -n "$PY_BIN"
+            ln -s "$(basename "$PY_BIN")" "$OUT/bin/python3"
+          fi
+
+          "$OUT/bin/python3" --version
+
+      - name: Install engine dependencies
+        run: |
+          OUT="build/engine-runtime/darwin-${{ matrix.arch }}"
+          uv pip install --python "$OUT/bin/python3" -r engine/requirements.upstream.txt
+
+      - name: Runtime self-check
+        run: |
+          OUT="build/engine-runtime/darwin-${{ matrix.arch }}"
+          "$OUT/bin/python3" -I -c "import sys,fastapi,uvicorn,pydantic,faster_whisper,ctranslate2,av,numpy,onnxruntime,tokenizers,huggingface_hub,yt_dlp; print('Runtime OK:', sys.version); print('Architecture:', __import__('platform').machine())"
+
+          "$OUT/bin/python3" -m pip freeze > "$OUT/packages.txt" 2>/dev/null || true
+          shasum -a 256 "$OUT/bin/python3" > "$OUT/python-sha256.txt"
+
+          "$OUT/bin/python3" -c "import json,platform,sys; json.dump({'platform':sys.platform,'arch':platform.machine(),'python':sys.version.split()[0]},open('$OUT/runtime-manifest.json','w'),indent=2)"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Build SEVNT macOS app
+        run: |
+          if [ "${{ matrix.arch }}" = "arm64" ]; then
+            npm run build:mac:arm64
+          else
+            npm run build:mac:x64
+          fi
+
+      - name: Upload macOS installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEVNT-macOS-${{ matrix.arch }}
+          path: release/*
+          if-no-files-found: error

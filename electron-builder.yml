@@ -1,0 +1,59 @@
+# SEVNT Studio packaging (electron-builder).
+# Windows x64 is built and tested on the development machine. macOS arm64 / x64 are CONFIGURED ONLY (NOT TESTED here):
+# they need a macOS runner, a Developer ID certificate and notarization credentials (see AUDIT/08_MACOS_COMPATIBILITY.md).
+appId: com.seventy.sevntstudio
+productName: SEVNT Studio
+copyright: Copyright © Seventy
+directories:
+  output: release
+  buildResources: build
+asar: true
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+  - node_modules/@ffprobe-installer/**
+files:
+  - sevnt-main.js
+  - unified-preload.cjs
+  - package.json
+  - src/**/*
+  - assets/**/*
+  - "!**/*.map"
+  - "!assets/tour/_new/**"
+  - "!src/kt.bak12.js"
+  - "!**/*.py.bak"
+  - "!node_modules/**/{test,tests,__tests__,docs,example,examples}/**"
+  - "!node_modules/electron/**"
+  - "!node_modules/electron-builder/**"
+extraResources:
+  # engine source (plain .py so it stays readable/auditable) and the per-platform Python runtime built by `npm run engine:runtime`
+  - from: engine
+    to: engine
+    filter: ["sevnt_engine/**/*", "!**/__pycache__/**", "!**/*.pyc"]
+  - from: build/engine-runtime/${platform}-${arch}
+    to: engine-runtime/${platform}-${arch}
+afterPack: build/after-pack.cjs
+win:
+  signAndEditExecutable: false   # winCodeSign needs the symlink privilege; identity is stamped by build/after-pack.cjs instead
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: assets/brand/icon.ico
+  artifactName: SEVNT-Studio-Setup-${version}-${arch}.${ext}
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: false
+  deleteAppDataOnUninstall: false     # never delete the user's projects/licence on uninstall
+  shortcutName: SEVNT Studio
+mac:
+  category: public.app-category.video
+  icon: assets/brand/icon.icns
+  target:
+    - target: dmg
+    - target: zip
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  artifactName: SEVNT-Studio-${version}-${arch}.${ext}
+publish: null          # nothing is uploaded; publishing needs an explicit decision

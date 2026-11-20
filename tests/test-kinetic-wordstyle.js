@@ -1,0 +1,32 @@
+// Per-word colour / font / bold / italic on a "Caption animasi" template: the same layout function feeds preview and burn.
+// Needs Electron (font metrics): run through tests/electron/kinetic-ass.electron.js.
+'use strict';
+const KT = require('../src/kinetic-title.js');
+let pass = 0, fail = 0;
+const log = (m) => { (globalThis.__tl = globalThis.__tl || []).push(m); console.log(m); };
+const ok = (c, n) => { if (c) { pass++; log('  PASS ' + n); } else { fail++; log('  FAIL ' + n); } };
+console.log('kinetic caption per-word styles');
+const id = 'cap_editorialswiss';
+const text = 'kita tidur Heeh.';
+const base = KT.layout(id, text, { cx: 540, top: 1020, k: 1, dur: 2000, glow: false });
+const find = (L, re) => L.elements.find((e) => e.text && re.test(e.text));
+const tokens = [{ text: 'kita' }, { text: 'tidur' }, { text: 'Heeh.', style: { color: '#ff0000', fn: 'Anton', i: 1, b: 1 } }];
+const L = KT.applyTokenStyles(base, tokens);
+const hee = find(L, /heeh/i);
+const hee0 = find(base, /heeh/i);
+ok(hee && hee.color === '#ff0000', 'colour applied to the matching word');
+ok(hee && hee.font === 'Anton', 'font applied to the matching word');
+ok(hee && hee.wI === true && hee.wB === 1, 'italic and bold flags set');
+const w0 = KT.widthPx(hee0.text, hee0.font, hee0.px);
+const w1 = KT.widthPx(hee.text, hee.font, hee.px);
+ok(Math.abs(w1 - w0) / w0 < 0.08, 'new font keeps the word width (within 8%): ' + w0.toFixed(0) + ' -> ' + w1.toFixed(0));
+ok(find(L, /kita/i).font === find(base, /kita/i).font && !find(L, /kita/i).wI, 'other words untouched');
+ok(!hee0.wI && hee0.font !== 'Anton', 'original layout object is not mutated');
+const ass = KT.toAssEvents(L, { start: 0, end: 2, map: { s: 1, cx: 540, cy: 1020, cxOut: 540, cyOut: 1020 } }).join(String.fromCharCode(10));
+const bs = String.fromCharCode(92);
+ok(ass.includes(bs + 'fnAnton'), 'burn: font tag uses the chosen font');
+ok(ass.includes(bs + 'b1') && ass.includes(bs + 'i1'), 'burn: bold and italic tags are written');
+ok(ass.includes(bs + '1c&H0000FF&'), 'burn: colour override written (red in ASS BGR)');
+ok(KT.applyTokenStyles(base, [{ text: 'kita' }]) === base, 'no styled tokens: layout returned unchanged');
+log('Results: ' + pass + ' passed, ' + fail + ' failed');
+process.exit(fail ? 1 : 0);

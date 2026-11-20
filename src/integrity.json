@@ -1,0 +1,10 @@
+{
+  "generated": "2026-10-30T17:19:05.283Z",
+  "hashes": {
+    "src/main.js": "c607ea1c850fa02e765fef16c911777c875de98a6e64b1ac2cdcff99b2686362",
+    "src/bootstrap.js": "2416f7fdb2e382108de42a2b7b8472ca6fe7f73709568f088bf0b5e57ab07581",
+    "src/secrets.js": "7227a9b03fef97afb403ca6979847b17162a127cf70fea4910ca202a4c634b8e",
+    "src/license/config.js": "8f903b2d7afe84f86bf6ed3a6e1a9beec8c440834991c5131cbd8a896993b90c",
+    "src/license/licenseManager.js": "0b6808c82f27cb54fe570a70b7cbd7352182215738fb02adaa5e95a3db9dae07"
+  }
+}

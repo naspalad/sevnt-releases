@@ -1,0 +1,1248 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SEVNT Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+/* ══════════════════════════════════════════════
+   SEVNT DESIGN SYSTEM — TOKENS
+   ══════════════════════════════════════════════ */
+:root {
+  --font: 'Plus Jakarta Sans', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: ui-monospace, 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Brand */
+  --red:      #e8192c;
+  --red-dim:  rgba(232,25,44,.15);
+  --red-glow: rgba(232,25,44,.35);
+  --red-soft: rgba(232,25,44,.08);
+  --green:    #32d74b;
+  --yellow:   #ffd60a;
+
+  /* Background layers */
+  --bg:   #000000;
+  --bg-1: #0a0a0b;
+  --bg-2: #111113;
+  --bg-3: #181819;
+
+  /* Glass fills */
+  --l1: rgba(255,255,255,.032);
+  --l2: rgba(255,255,255,.056);
+  --l3: rgba(255,255,255,.084);
+  --l4: rgba(255,255,255,.12);
+  --l5: rgba(255,255,255,.16);
+
+  /* Borders */
+  --b1: rgba(255,255,255,.06);
+  --b2: rgba(255,255,255,.10);
+  --b3: rgba(255,255,255,.20);
+
+  /* Text */
+  --t1: rgba(255,255,255,.94);
+  --t2: rgba(255,255,255,.72);
+  --t3: rgba(255,255,255,.62);
+  --t4: rgba(255,255,255,.40);
+
+  /* Blur */
+  --blur-sm: blur(16px) saturate(150%);
+  --blur-md: blur(28px) saturate(165%);
+  --blur-lg: blur(44px) saturate(185%);
+  --blur-xl: blur(60px) saturate(200%);
+
+  /* Easing */
+  --spring:   cubic-bezier(0.34,1.56,0.64,1);
+  --ease:     cubic-bezier(0.25,0.46,0.45,0.94);
+  --ease-out: cubic-bezier(0,0.55,0.45,1);
+
+  /* Radius */
+  --r-xs:   6px;
+  --r-sm:   10px;
+  --r-md:   16px;
+  --r-lg:   20px;
+  --r-xl:   26px;
+  --r-pill: 999px;
+
+  /* Shadows */
+  --shadow-sm:  0 2px 8px rgba(0,0,0,.4);
+  --shadow-md:  0 8px 24px rgba(0,0,0,.5);
+  --shadow-lg:  0 20px 60px rgba(0,0,0,.7);
+  --shadow-red: 0 8px 32px rgba(232,25,44,.25);
+}
+
+/* ══ Reset ══════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { width:100%; height:100%; overflow:hidden; }
+body {
+  font-family: var(--font);
+  color: var(--t1);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button { font-family:var(--font); border:none; background:none; cursor:pointer; color:inherit; }
+input,textarea { font-family:var(--font); outline:none; }
+a { color:inherit; text-decoration:none; }
+
+/* ══ App wrapper ════════════════════════════════ */
+.app-root {
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+  background: #000;
+}
+
+/* Radial red accent overlay */
+.app-root::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 10% 0%, rgba(232,25,44,.07), transparent 40%),
+    radial-gradient(ellipse at 90% 100%, rgba(232,25,44,.04), transparent 35%);
+}
+
+/* ══ Shell — sidebar + main ═════════════════════ */
+.shell {
+  display: flex;
+  height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+/* ══ Sidebar / Rail ═════════════════════════════ */
+.sevnt-rail {
+  width: 62px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 5px;
+  background: var(--l1);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border-right: 1px solid var(--b1);
+  position: relative;
+  z-index: 20;
+}
+/* Animated gradient border */
+.sevnt-rail::after {
+  content: '';
+  position: absolute;
+  top:0; right:0;
+  width:1px; height:100%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255,255,255,.10) 15%,
+    rgba(255,255,255,.16) 30%,
+    rgba(232,25,44,.18) 48%,
+    rgba(232,25,44,.08) 55%,
+    rgba(255,255,255,.10) 72%,
+    transparent 100%
+  );
+  animation: sidebar-border-pulse 4s ease-in-out infinite;
+}
+@keyframes sidebar-border-pulse {
+  0%,100% { opacity:.8; }
+  50%      { opacity:1; }
+}
+.rail-logo {
+  width:36px; height:36px; border-radius:11px;
+  background: linear-gradient(135deg, var(--red) 0%, #a0000d 100%);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; color:#fff; letter-spacing:-.5px;
+  box-shadow: 0 4px 18px var(--red-glow), 0 1px 0 rgba(255,255,255,.22) inset;
+  cursor:pointer;
+  position:relative; overflow:hidden;
+  margin-bottom:8px; flex-shrink:0;
+  transition: transform .35s var(--spring), box-shadow .25s;
+}
+.rail-logo:hover { transform:scale(1.08); box-shadow:0 6px 24px var(--red-glow); }
+.rail-logo::after {
+  content:'';
+  position:absolute; inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.25) 0%,transparent 55%);
+}
+.rail-logo span { position:relative; z-index:1; }
+
+.rail-divider {
+  width:22px; height:1px;
+  background:var(--b1);
+  margin:3px 0;
+  flex-shrink:0;
+}
+.s-bot { margin-top:auto; display:flex; flex-direction:column; gap:5px; }
+
+/* ══ Rail button ════════════════════════════════ */
+.rail-btn {
+  width:38px; height:38px; border-radius:12px;
+  border:none; cursor:pointer;
+  background:transparent; color:var(--t3);
+  display:flex; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+  transition: color .28s var(--ease), transform .38s var(--spring), background .25s var(--ease), box-shadow .3s var(--ease);
+  isolation:isolate;
+}
+.rail-btn svg {
+  width:16px; height:16px; stroke-width:1.7;
+  transition:stroke-width .2s;
+  position:relative; z-index:1;
+}
+.rail-btn .rl { display:flex; flex-direction:column; align-items:center; gap:2px; }
+.rail-btn .rl-label {
+  font-size:7px; font-weight:600; letter-spacing:.03em;
+  color:inherit; line-height:1; opacity:.7; text-transform:uppercase;
+}
+.rail-btn:hover { color:var(--t1); background:var(--l3); transform:scale(1.10); }
+.rail-btn:hover svg { stroke-width:2; }
+.rail-btn:active { transform:scale(0.82,1.12); transition-duration:.06s; }
+
+/* Active — liquid glass red */
+.rail-btn.active {
+  color:var(--red);
+  background:rgba(232,25,44,.10);
+  backdrop-filter:blur(12px) saturate(180%);
+  -webkit-backdrop-filter:blur(12px) saturate(180%);
+  box-shadow:
+    0 0 0 1px rgba(232,25,44,.22),
+    0 2px 12px rgba(232,25,44,.12),
+    inset 0 1px 0 rgba(255,255,255,.10);
+  animation:rail-spring-in .42s var(--spring) both;
+}
+.rail-btn.active svg { stroke-width:2.1; filter:drop-shadow(0 0 6px rgba(232,25,44,.5)); }
+.rail-btn.active::before {
+  content:'';
+  position:absolute; inset:0; border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.04) 40%,transparent 60%,rgba(232,25,44,.06) 100%);
+  pointer-events:none; z-index:0;
+}
+.rail-btn.active::after {
+  content:'';
+  position:absolute; inset:-2px; border-radius:14px;
+  background:radial-gradient(ellipse at center,rgba(232,25,44,.18) 0%,transparent 70%);
+  pointer-events:none; z-index:-1;
+  animation:rail-glow-pulse 2.4s ease-in-out infinite;
+}
+@keyframes rail-spring-in {
+  0%  { transform:scale(.78,1.18); opacity:.7; }
+  45% { transform:scale(1.08,.94); opacity:1; }
+  70% { transform:scale(.97,1.03); }
+  85% { transform:scale(1.02,.99); }
+  100%{ transform:scale(1,1); }
+}
+@keyframes rail-glow-pulse {
+  0%,100% { opacity:.7; transform:scale(1); }
+  50%     { opacity:1;  transform:scale(1.15); }
+}
+
+/* ══ Main column ════════════════════════════════ */
+.main {
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  min-width:0;
+}
+
+/* ══ Topbar wrap — floating pill space ══════════ */
+.sevnt-topbar-wrap {
+  padding: 10px 14px 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+/* ══ Topbar ══════════════════════════════════════ */
+.sevnt-topbar {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  background: rgba(18,18,18,.78);
+  backdrop-filter: var(--blur-lg);
+  -webkit-backdrop-filter: var(--blur-lg);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--b2);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.12) inset,
+    0 -1px 0 rgba(0,0,0,.4) inset,
+    0 12px 36px rgba(0,0,0,.5);
+  position: relative;
+  overflow: hidden;
+}
+/* Shimmer sweep line */
+.sevnt-topbar::before {
+  content:'';
+  position:absolute; top:0; left:-100%;
+  width:55%; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,120,120,.45),rgba(255,255,255,.65),rgba(140,180,255,.45),transparent);
+  animation:shimmerSweep 7s ease-in-out infinite;
+  pointer-events:none; z-index:10;
+}
+@keyframes shimmerSweep { 0%{left:-60%} 55%{left:110%} 100%{left:110%} }
+
+.brand-txt { display:flex; flex-direction:column; }
+.brand-n { font-size:10.5px; font-weight:800; letter-spacing:.03em; line-height:1; }
+.brand-n span { color:var(--red); }
+.brand-s { font-size:7px; letter-spacing:.14em; color:var(--t3); font-weight:600; margin-top:1px; }
+.t-sep { width:1px; height:17px; background:var(--b1); flex-shrink:0; }
+.t-right { display:flex; align-items:center; gap:7px; margin-left:auto; }
+
+/* ══ Pill buttons ════════════════════════════════ */
+.pill {
+  display:inline-flex; align-items:center; gap:5px;
+  padding:5px 13px; border-radius:var(--r-pill);
+  border:none; cursor:pointer;
+  font-family:var(--font); font-size:10.5px; font-weight:600;
+  white-space:nowrap; position:relative; overflow:hidden;
+  transition:transform .4s var(--spring), box-shadow .25s, background .2s;
+  -webkit-user-select:none; user-select:none;
+}
+.pill:active { transform:scale(.94,1.03); transition-duration:.08s; }
+.p-ghost {
+  background:var(--l2); border:1px solid var(--b2);
+  color:var(--t1); backdrop-filter:blur(12px);
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.p-ghost:hover { background:var(--l3); border-color:var(--b3); transform:scale(1.03) translateY(-1px); }
+.p-red {
+  background:linear-gradient(135deg,var(--red) 0%,#a0000d 100%);
+  border:1px solid rgba(255,255,255,.10);
+  color:#fff; font-weight:700;
+  box-shadow:0 4px 18px var(--red-glow);
+}
+.p-red:hover { box-shadow:0 8px 26px rgba(232,25,44,.52); transform:scale(1.04) translateY(-1px); }
+
+/* Ripple hover */
+.rip { position:relative; overflow:hidden; }
+.rip::after {
+  content:'';
+  position:absolute; inset:0; border-radius:inherit;
+  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.16) 0%,transparent 65%);
+  opacity:0; transition:opacity .25s; pointer-events:none;
+}
+.rip:hover::after { opacity:1; }
+.rip:active::after { opacity:.35; transition-duration:.05s; }
+
+/* Icon button */
+.icon-btn {
+  width:30px; height:30px; border-radius:9px;
+  border:1px solid var(--b1); background:var(--l2); color:var(--t2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; backdrop-filter:blur(12px);
+  transition:all .3s var(--spring);
+}
+.icon-btn svg { width:14px; height:14px; stroke-width:1.8; }
+.icon-btn:hover { color:var(--t1); background:var(--l3); transform:scale(1.10); }
+
+/* License dot */
+.dot { width:6px; height:6px; border-radius:50%; display:inline-block; flex-shrink:0; }
+.d-grn { background:var(--green); box-shadow:0 0 6px var(--green); }
+.d-yel { background:var(--yellow); box-shadow:0 0 6px var(--yellow); }
+.d-red { background:var(--red); box-shadow:0 0 6px var(--red); }
+
+/* ══ Body area ══════════════════════════════════ */
+.sevnt-body {
+  flex:1; min-height:0;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+
+/* ══ Content scroll area ════════════════════════ */
+.sevnt-content {
+  flex:1;
+  overflow:auto;
+  padding:10px 14px 14px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--b2) transparent;
+}
+.sevnt-content::-webkit-scrollbar { width:5px; }
+.sevnt-content::-webkit-scrollbar-track { background:transparent; }
+.sevnt-content::-webkit-scrollbar-thumb { background:var(--b2); border-radius:10px; }
+
+/* ══ Statusbar ══════════════════════════════════ */
+.statusbar {
+  height:28px; flex-shrink:0;
+  display:flex; align-items:center; gap:10px;
+  padding:0 12px;
+  border-top:1px solid var(--b1);
+  background:rgba(0,0,0,.5);
+  font-size:9px; color:var(--t3);
+}
+.sb-badge {
+  display:flex; align-items:center; gap:5px;
+  font-size:8px; font-weight:700; letter-spacing:.1em; color:var(--t3);
+}
+.sb-right { margin-left:auto; font-family:var(--mono); font-size:8px; color:var(--t4); }
+
+/* Pulse dot */
+@keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.7)} }
+.pulse {
+  width:5px; height:5px; border-radius:50%;
+  background:var(--t4); display:inline-block;
+  animation:pulse-dot 2.2s ease-in-out infinite;
+}
+
+/* ══ Glass primitives ═══════════════════════════ */
+.g {
+  background:var(--l2); border:1px solid var(--b2);
+  backdrop-filter:var(--blur-md); -webkit-backdrop-filter:var(--blur-md);
+  border-radius:var(--r-xl);
+  position:relative; overflow:hidden;
+  box-shadow:0 1px 0 rgba(255,255,255,.08) inset, 0 8px 28px rgba(0,0,0,.4);
+}
+.g::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,180,180,.20),rgba(255,255,255,.45),rgba(180,210,255,.20),transparent);
+  pointer-events:none;
+}
+.glass-panel {
+  background:rgba(20,20,23,.72); border:1px solid var(--b2);
+  border-radius:var(--r-lg);
+  backdrop-filter:var(--blur-md); -webkit-backdrop-filter:var(--blur-md);
+}
+.glass-card {
+  background:var(--l2); border:1px solid var(--b1);
+  border-radius:var(--r-md);
+}
+
+/* ══ Placeholder panel ══════════════════════════ */
+.placeholder {
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  gap:12px; height:100%;
+  color:var(--t4); font-size:11px; font-weight:500; letter-spacing:.06em;
+}
+.placeholder svg { opacity:.25; }
+
+/* ══ SourcePanel ════════════════════════════════ */
+.source-panel-wrap {
+  flex-shrink:0;
+  border-bottom:1px solid var(--b1);
+}
+.source-panel {
+  display:flex; flex-direction:column;
+}
+.sp-toggle {
+  display:flex; align-items:center; gap:7px;
+  padding:8px 14px;
+  cursor:pointer; color:var(--t2); font-size:10px;
+  transition:color .2s;
+}
+.sp-toggle:hover { color:var(--t1); }
+.sp-toggle-icon { display:flex; color:var(--t3); }
+.sp-toggle-icon svg { width:12px; height:12px; stroke-width:1.8; }
+.sp-toggle-label { font-size:10px; font-weight:700; letter-spacing:.04em; color:var(--t2); }
+.sp-toggle-chevron { font-size:9px; color:var(--t4); margin-left:auto; transition:transform .2s var(--ease); }
+.sp-toggle-chevron.open { transform:rotate(180deg); }
+
+.sp-body {
+  display:none;
+  gap:10px;
+  padding:0 14px 10px;
+}
+.sp-body.open { display:flex; }
+.sp-left { flex:1; display:flex; flex-direction:column; gap:7px; min-width:0; }
+.sp-right { width:140px; flex-shrink:0; }
+
+/* URL row */
+.url-row { display:flex; gap:6px; align-items:center; }
+.url-input-wrap {
+  flex:1; display:flex; align-items:center;
+  height:32px; border-radius:var(--r-pill);
+  background:var(--l2); border:1px solid var(--b2);
+  overflow:hidden;
+  transition:border-color .2s, box-shadow .2s;
+}
+.url-input-wrap:focus-within {
+  border-color:var(--b3); box-shadow:0 0 0 2px rgba(255,255,255,.04);
+}
+.url-input {
+  flex:1; height:100%; padding:0 12px;
+  background:transparent; border:none; color:var(--t1);
+  font-size:9.5px; font-family:var(--font);
+}
+.url-input::placeholder { color:var(--t4); }
+.url-inner-sep { width:1px; height:16px; background:var(--b1); flex-shrink:0; }
+.url-inner-btn {
+  display:flex; align-items:center; gap:4px;
+  padding:0 10px; height:100%; font-size:9px; font-weight:600;
+  color:var(--t3); background:transparent; border:none;
+  cursor:pointer; transition:color .15s;
+  white-space:nowrap;
+}
+.url-inner-btn:hover { color:var(--t1); }
+.url-inner-btn svg { width:10px; height:10px; stroke-width:1.8; }
+
+/* Filter chips */
+.filter-row { display:flex; gap:5px; flex-wrap:wrap; }
+.filter-chip {
+  display:flex; align-items:center; gap:4px;
+  padding:3px 9px; border-radius:var(--r-pill);
+  border:1px solid var(--b1); background:var(--l1);
+  font-size:9px; font-weight:600; color:var(--t3);
+  cursor:pointer; transition:all .2s var(--ease);
+}
+.filter-chip:hover { border-color:var(--b2); color:var(--t1); background:var(--l2); }
+.filter-chip .arr { font-size:7px; color:var(--t4); }
+.fc-dot { width:5px; height:5px; border-radius:50%; display:inline-block; }
+
+/* YT Thumb */
+.yt-thumb {
+  width:100%; aspect-ratio:16/9; border-radius:var(--r-md);
+  background:var(--l2); border:1px solid var(--b1);
+  display:flex; align-items:center; justify-content:center;
+  overflow:hidden; position:relative;
+}
+.yt-label {
+  font-size:7px; font-weight:800; letter-spacing:.14em; color:var(--t4);
+}
+.yt-sub { font-size:8px; color:var(--t3); margin-top:2px; }
+.yt-thumb-icon {
+  font-size:22px; color:var(--t4); opacity:.3;
+  text-align:center;
+}
+.yt-meta { padding:8px; }
+
+/* Sources empty */
+.sp-empty {
+  font-size:9px; color:var(--t4); text-align:center;
+  padding:10px 0; line-height:1.7;
+}
+
+/* ══ p1-wrap (Clips page wrapper) ═══════════════ */
+.p1-wrap {
+  display:flex; flex-direction:column; flex:1; min-height:0;
+  overflow:hidden;
+}
+
+/* ══ Toolbar ════════════════════════════════════ */
+.p1-toolbar {
+  display:flex; align-items:center; gap:7px;
+  padding:7px 14px;
+  border-bottom:1px solid var(--b1);
+  flex-shrink:0; min-width:0; overflow:hidden;
+}
+.p1-stat {
+  font-size:9px; color:var(--t3); white-space:nowrap;
+}
+.p1-stat b { color:var(--t1); }
+.p1-sep { width:1px; height:14px; background:var(--b1); flex-shrink:0; }
+
+/* Pill dim variant */
+.p-dim {
+  background:var(--l1); border:1px solid var(--b1); color:var(--t3);
+}
+.p-dim:hover { background:var(--l2); border-color:var(--b2); color:var(--t1); }
+
+/* ══ Clip grid ══════════════════════════════════ */
+.clips-scroll {
+  flex:1; overflow:auto;
+  padding:10px 14px 14px;
+  scrollbar-width:thin;
+  scrollbar-color:var(--b2) transparent;
+}
+.clips-scroll::-webkit-scrollbar { width:5px; }
+.clips-scroll::-webkit-scrollbar-thumb { background:var(--b2); border-radius:10px; }
+
+.clip-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(135px,1fr));
+  gap:10px;
+}
+
+/* ══ Clip card (.cc) ════════════════════════════ */
+.cc {
+  display:flex; flex-direction:column;
+  border-radius:var(--r-lg); overflow:hidden;
+  border:1px solid var(--b1);
+  background:var(--l1);
+  cursor:pointer;
+  transition:border-color .2s, transform .3s var(--spring), box-shadow .25s;
+}
+.cc:hover {
+  border-color:var(--b3);
+  transform:translateY(-3px) scale(1.015);
+  box-shadow:0 12px 36px rgba(0,0,0,.55);
+}
+.cc.sel {
+  border-color:rgba(232,25,44,.4);
+  box-shadow:0 0 0 1px rgba(232,25,44,.25), 0 8px 28px rgba(232,25,44,.12);
+}
+
+/* Thumbnail — 9:16 portrait */
+.cc-thumb {
+  position:relative; width:100%;
+  aspect-ratio:9/16;
+  background:var(--l2);
+  overflow:hidden;
+  flex-shrink:0;
+}
+.cc-thumb img {
+  position:absolute; inset:0;
+  width:100%; height:100%; object-fit:cover; border-radius:inherit;
+}
+.cc-thumb-ph {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  opacity:.18;
+}
+.cc-thumb-ph svg { width:32px; height:32px; }
+.cc-thumb-grad {
+  position:absolute; bottom:0; left:0; right:0;
+  height:48%; pointer-events:none;
+  background:linear-gradient(to top,rgba(0,0,0,.72) 0%,transparent 100%);
+}
+.cc-num {
+  position:absolute; bottom:5px; left:6px;
+  font-size:8px; font-weight:800; color:rgba(255,255,255,.55);
+  letter-spacing:.05em;
+}
+
+/* Score badge */
+.cc-score {
+  position:absolute; top:5px; right:5px;
+  font-size:8.5px; font-weight:800;
+  padding:2px 6px; border-radius:var(--r-pill);
+  letter-spacing:.03em; line-height:1;
+}
+.cc-score.hot {
+  background:rgba(232,25,44,.85);
+  color:#fff;
+  box-shadow:0 2px 8px rgba(232,25,44,.4);
+}
+.cc-score.mid {
+  background:rgba(255,214,10,.22);
+  color:var(--yellow);
+  border:1px solid rgba(255,214,10,.3);
+}
+.cc-score.low {
+  background:var(--l3);
+  color:var(--t3);
+  border:1px solid var(--b1);
+}
+
+/* Play button */
+.cc-play-btn {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:32px; height:32px; border-radius:50%;
+  background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.18);
+  backdrop-filter:blur(8px);
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .2s;
+  color:var(--t1);
+}
+.cc:hover .cc-play-btn { opacity:1; }
+.cc-play-btn svg { width:12px; height:12px; }
+
+/* Card body */
+.cc-body {
+  padding:7px 8px 8px;
+  display:flex; flex-direction:column; gap:3px;
+}
+.cc-title {
+  font-size:9.5px; font-weight:700; color:var(--t1);
+  line-height:1.35; overflow:hidden;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+.cc-hook {
+  font-size:8.5px; color:var(--t3); line-height:1.4;
+  overflow:hidden;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+.cc-meta {
+  display:flex; align-items:center; gap:5px; margin-top:2px;
+}
+.cc-dur {
+  font-size:8px; color:var(--t4); font-family:var(--mono);
+}
+.cc-status {
+  font-size:7.5px; font-weight:700; letter-spacing:.08em;
+  padding:1px 5px; border-radius:3px;
+}
+.cc-status.rendered {
+  background:rgba(50,215,75,.12); color:var(--green);
+  border:1px solid rgba(50,215,75,.2);
+}
+.cc-status.pending {
+  background:var(--l2); color:var(--t4);
+  border:1px solid var(--b1);
+}
+
+/* ══ Animations ═════════════════════════════════ */
+@keyframes slideUp {
+  from { opacity:0; transform:translateY(14px) scale(.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+@keyframes fadeIn {
+  from { opacity:0; }
+  to   { opacity:1; }
+}
+@keyframes popIn {
+  0%   { opacity:0; transform:scale(.88) translateY(8px); }
+  60%  { transform:scale(1.03) translateY(-2px); }
+  100% { opacity:1; transform:scale(1) translateY(0); }
+}
+
+</style>
+</head>
+<body>
+
+<div class="app-root">
+
+  <!-- ── Shell ───────────────────────────────── -->
+  <div class="shell">
+
+    <!-- ── Sidebar Rail ──────────────────────── -->
+    <aside class="sevnt-rail">
+
+      <!-- Logo -->
+      <div class="rail-logo rip">
+        <span>S</span>
+      </div>
+      <div class="rail-divider"></div>
+
+      <!-- Nav: Clips -->
+      <button class="rail-btn active" title="Clip Results">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+            <path d="m9 10 2 2 4-4"/>
+          </svg>
+          <span class="rl-label">Clips</span>
+        </div>
+      </button>
+
+      <!-- Nav: Caption -->
+      <button class="rail-btn" title="Caption & Style">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="5" width="18" height="14" rx="2"/>
+            <path d="M7 9h10M7 13h6"/>
+          </svg>
+          <span class="rl-label">Caption</span>
+        </div>
+      </button>
+
+      <!-- Nav: Transcript -->
+      <button class="rail-btn" title="Transcript Editor">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+          </svg>
+          <span class="rl-label">Transkrip</span>
+        </div>
+      </button>
+
+      <!-- Nav: Watermark -->
+      <button class="rail-btn" title="Watermark">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M3 9h18M9 21V9"/>
+          </svg>
+          <span class="rl-label">Watermark</span>
+        </div>
+      </button>
+
+      <!-- Nav: Crop -->
+      <button class="rail-btn" title="Crop Studio">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2v14a2 2 0 0 0 2 2h14"/>
+            <path d="M18 22V8a2 2 0 0 0-2-2H2"/>
+          </svg>
+          <span class="rl-label">Crop</span>
+        </div>
+      </button>
+
+      <!-- Nav: Files / Projects -->
+      <button class="rail-btn" title="Projects">
+        <div class="rl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="rl-label">Files</span>
+        </div>
+      </button>
+
+      <!-- Bottom nav -->
+      <div class="s-bot">
+        <button class="rail-btn" title="Help">
+          <div class="rl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>
+            </svg>
+            <span class="rl-label">Help</span>
+          </div>
+        </button>
+        <button class="rail-btn" title="Settings">
+          <div class="rl">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            <span class="rl-label">Settings</span>
+          </div>
+        </button>
+      </div>
+
+    </aside>
+
+    <!-- ── Main column ────────────────────────── -->
+    <div class="main">
+
+      <!-- ── Topbar wrap (creates floating space) -->
+      <div class="sevnt-topbar-wrap">
+        <header class="sevnt-topbar rip">
+
+          <!-- Brand -->
+          <div class="brand-txt">
+            <div class="brand-n">SEVNT <span>STUDIO</span></div>
+            <div class="brand-s">SEVNT STUDIO</div>
+          </div>
+
+          <div class="t-sep"></div>
+
+          <!-- License status pill -->
+          <button class="pill p-ghost rip" style="font-size:9.5px">
+            <span class="dot d-grn"></span>
+            AKTIF
+          </button>
+
+          <!-- Hasil render -->
+          <button class="pill p-ghost rip" style="font-size:9.5px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="11" height="11" stroke-width="2">
+              <rect x="3" y="3" width="18" height="14" rx="2"/>
+              <path d="M7 21h10"/>
+            </svg>
+            Hasil render
+          </button>
+
+          <!-- Buka folder -->
+          <button class="pill p-ghost rip" style="font-size:9.5px">
+            Buka folder
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="10" height="10" stroke-width="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </button>
+
+          <!-- Right side actions -->
+          <div class="t-right">
+            <!-- URL input -->
+            <input
+              type="text"
+              placeholder="Paste YouTube / TikTok / Reels URL…"
+              style="
+                height:30px; padding:0 12px; border-radius:var(--r-pill);
+                background:var(--l2); border:1px solid var(--b1);
+                color:var(--t1); font-size:10px; font-family:var(--font);
+                width:220px; transition:border-color .2s, box-shadow .2s;
+              "
+            />
+
+            <!-- Run pipeline -->
+            <button class="pill p-red rip">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="10" height="10">
+                <polygon points="6 4 20 12 6 20"/>
+              </svg>
+              Run pipeline
+            </button>
+
+            <!-- Aurora toggle -->
+            <button class="pill p-ghost rip" style="font-size:9.5px">✦ Aurora</button>
+
+            <!-- Theme toggle -->
+            <button class="icon-btn rip" title="Toggle theme">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+              </svg>
+            </button>
+          </div>
+
+        </header>
+      </div>
+
+      <!-- ── Body / Pages ───────────────────────── -->
+      <div class="sevnt-body">
+
+        <!-- ── CLIPS PAGE ─────────────────────── -->
+        <div class="p1-wrap">
+
+          <!-- SourcePanel — collapsible input bar -->
+          <div class="source-panel-wrap">
+            <div class="source-panel">
+
+              <!-- Toggle row -->
+              <div class="sp-toggle rip" id="spToggle" onclick="toggleSP()">
+                <div class="sp-toggle-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                  </svg>
+                </div>
+                <span class="sp-toggle-label">Sumber Video</span>
+                <span style="font-size:9.5px;color:var(--t3);margin-left:4px">· Tempel link atau import file</span>
+                <span class="sp-toggle-chevron" id="spChevron">▾</span>
+              </div>
+
+              <!-- Body (collapsed by default) -->
+              <div class="sp-body" id="spBody">
+                <div class="sp-left">
+
+                  <!-- URL row -->
+                  <div class="url-row">
+                    <div class="url-input-wrap">
+                      <input class="url-input" placeholder="https://www.youtube.com/watch?v=..." id="urlInput"/>
+                      <div class="url-inner-sep"></div>
+                      <button class="url-inner-btn rip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <rect x="9" y="9" width="13" height="13" rx="2"/>
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        Paste
+                      </button>
+                      <div class="url-inner-sep"></div>
+                      <button class="url-inner-btn rip">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                        </svg>
+                        Choose file
+                      </button>
+                    </div>
+                    <button class="pill p-red rip" style="font-size:10px;flex-shrink:0">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="10" height="10" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.35-4.35"/>
+                      </svg>
+                      Find highlights →
+                    </button>
+                  </div>
+
+                  <!-- Filter chips -->
+                  <div class="filter-row">
+                    <div class="filter-chip rip" style="background:rgba(232,25,44,.12);border-color:rgba(232,25,44,.35);color:var(--t1)">
+                      <span class="fc-dot" style="background:#ff4466;box-shadow:0 0 4px #ff4466"></span>
+                      Viral Hooks <span class="arr">▾</span>
+                    </div>
+                    <div class="filter-chip rip">
+                      <span class="fc-dot" style="background:#ffd60a;box-shadow:0 0 4px #ffd60a"></span>
+                      Emotional <span class="arr">▾</span>
+                    </div>
+                    <div class="filter-chip rip">
+                      <span class="fc-dot" style="background:#32d74b;box-shadow:0 0 4px #32d74b"></span>
+                      Educational <span class="arr">▾</span>
+                    </div>
+                    <div class="filter-chip rip">
+                      <span class="fc-dot" style="background:#0a84ff;box-shadow:0 0 4px #0a84ff"></span>
+                      Cinematic <span class="arr">▾</span>
+                    </div>
+                    <div class="filter-chip rip">
+                      🔥 Trending
+                      <span style="background:var(--green);color:#000;font-size:7px;font-weight:800;padding:1px 5px;border-radius:4px;margin-left:2px">NEW</span>
+                    </div>
+                    <div class="filter-chip rip">Auto-detect <span class="arr">▾</span></div>
+                  </div>
+
+                  <!-- Source empty state -->
+                  <div class="sp-empty">Belum ada source. Import video lokal atau YouTube di atas.</div>
+
+                </div>
+
+                <!-- Right: YT preview thumb -->
+                <div class="sp-right">
+                  <div class="yt-thumb">
+                    <div style="position:relative;z-index:1;display:flex;flex-direction:column;height:100%;justify-content:space-between">
+                      <div class="yt-meta">
+                        <div class="yt-label">AWAITING URL</div>
+                        <div class="yt-sub">YouTube Preview</div>
+                      </div>
+                      <div class="yt-thumb-icon">▶</div>
+                      <div style="font-size:8px;color:var(--t4);text-align:center;padding:0 6px 8px;line-height:1.5">Paste a URL</div>
+                    </div>
+                  </div>
+                </div>
+
+              </div><!-- /.sp-body -->
+            </div><!-- /.source-panel -->
+          </div><!-- /.source-panel-wrap -->
+
+          <!-- p1-toolbar — stats + filter pills -->
+          <div class="p1-toolbar">
+            <span class="p1-stat">DETECTED CLIPS <b style="font-size:16px;font-weight:800;color:var(--t1)">12</b></span>
+            <div class="p1-sep"></div>
+            <span class="p1-stat"><b>5</b> found · <b>3</b> rendered · <b>9</b> pending · <b>5</b> hot</span>
+
+            <div style="margin-left:auto;display:flex;gap:5px;align-items:center">
+              <!-- Filter pills -->
+              <button class="pill p-ghost rip" style="font-size:9.5px;padding:4px 10px">All 12</button>
+              <button class="pill p-dim rip" style="font-size:9.5px;padding:4px 10px;color:var(--red)">Hot 5</button>
+              <button class="pill p-dim rip" style="font-size:9.5px;padding:4px 10px;color:var(--green)">Saved 3</button>
+
+              <!-- Transkripsi -->
+              <button class="pill p-ghost rip" style="font-size:9.5px">Transkripsi</button>
+
+              <!-- Judul & Hook -->
+              <button class="pill p-dim rip" style="font-size:9.5px;padding:4px 10px">≡ Judul &amp; Hook</button>
+
+              <!-- Render Semua -->
+              <button class="pill rip" style="font-size:9.5px;padding:4px 10px;background:rgba(232,25,44,.12);color:#ff8a8a;border:1px solid rgba(232,25,44,.30);display:flex;align-items:center;gap:3px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Render Semua (9)
+              </button>
+
+              <!-- Icon btns -->
+              <div style="display:flex;gap:2px">
+                <button class="icon-btn rip" title="Find highlights">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <circle cx="11" cy="11" r="8"/>
+                    <path d="m21 21-4.35-4.35"/>
+                  </svg>
+                </button>
+                <button class="icon-btn rip" title="Expand view">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                  </svg>
+                </button>
+                <button class="icon-btn rip" title="Buka folder output" style="color:var(--green)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <path d="M12 11v6M9 14l3 3 3-3"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Active source bar (sample) -->
+          <div style="display:flex;align-items:center;gap:6px;padding:5px 14px;border-bottom:1px solid var(--b1);font-size:9px;color:var(--t3);flex-shrink:0">
+            <span style="color:var(--green);font-weight:700">●</span>
+            <span style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">sample_video_highlights_full.mp4</span>
+            <span style="color:var(--t4)">· 24:38</span>
+            <button class="pill p-ghost rip" style="font-size:8.5px;padding:2px 8px;margin-left:auto;display:flex;align-items:center;gap:4px;color:var(--green);border-color:rgba(50,215,75,.25)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="9" height="9" stroke-width="2">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              Buka Folder Output
+            </button>
+          </div>
+
+          <!-- Clip grid -->
+          <div class="clips-scroll">
+            <div class="clip-grid" id="clipGrid">
+
+              <!-- Sample cards — 6 dummy clips -->
+
+              <!-- Card 1: HOT, rendered -->
+              <div class="cc glow-card rip sel" style="animation:slideUp .28s var(--spring) 0ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#1</span>
+                  <span class="cc-score hot">87</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Momen paling emosional di video ini</div>
+                  <div class="cc-hook">Ketika dia akhirnya berhasil…</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">0:12–0:45</span>
+                    <span class="cc-status rendered">RENDERED</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: HOT, pending -->
+              <div class="cc rip" style="animation:slideUp .28s var(--spring) 35ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#2</span>
+                  <span class="cc-score hot">79</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Hook pembuka yang langsung viral</div>
+                  <div class="cc-hook">Tidak ada yang menyangka bahwa…</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">1:03–1:38</span>
+                    <span class="cc-status pending">PENDING</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: MID -->
+              <div class="cc rip" style="animation:slideUp .28s var(--spring) 70ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#3</span>
+                  <span class="cc-score mid">62</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Tutorial step yang mudah dipahami</div>
+                  <div class="cc-hook">Caranya sangat simpel, cukup…</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">3:22–4:01</span>
+                    <span class="cc-status pending">PENDING</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4: HOT, rendered -->
+              <div class="cc rip" style="animation:slideUp .28s var(--spring) 105ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#4</span>
+                  <span class="cc-score hot">91</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Reveal mengejutkan di akhir</div>
+                  <div class="cc-hook">Dan ternyata semuanya berubah…</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">8:47–9:22</span>
+                    <span class="cc-status rendered">RENDERED</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 5: LOW -->
+              <div class="cc rip" style="animation:slideUp .28s var(--spring) 140ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#5</span>
+                  <span class="cc-score low">38</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Penjelasan detail teknis</div>
+                  <div class="cc-hook">Secara teknis, proses ini…</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">12:14–12:58</span>
+                    <span class="cc-status pending">PENDING</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 6: MID, rendered -->
+              <div class="cc rip" style="animation:slideUp .28s var(--spring) 175ms both">
+                <div class="cc-thumb">
+                  <div class="cc-thumb-ph">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/></svg>
+                  </div>
+                  <div class="cc-thumb-grad"></div>
+                  <span class="cc-num">#6</span>
+                  <span class="cc-score mid">55</span>
+                  <button class="cc-play-btn">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </button>
+                </div>
+                <div class="cc-body">
+                  <div class="cc-title">Quote inspiratif yang kuat</div>
+                  <div class="cc-hook">"Jangan pernah menyerah…"</div>
+                  <div class="cc-meta">
+                    <span class="cc-dur">15:30–16:05</span>
+                    <span class="cc-status rendered">RENDERED</span>
+                  </div>
+                </div>
+              </div>
+
+            </div><!-- /.clip-grid -->
+          </div><!-- /.clips-scroll -->
+
+        </div><!-- /.p1-wrap -->
+
+      </div><!-- /.sevnt-body -->
+
+      <!-- ── Status bar ─────────────────────────── -->
+      <div class="statusbar">
+        <div class="sb-badge">
+          <span class="pulse"></span>
+          IDLE
+        </div>
+        <span>SEVNT local processing · Video sumber tidak diubah</span>
+        <div class="sb-right">v1.5.0</div>
+      </div>
+
+    </div><!-- /.main -->
+  </div><!-- /.shell -->
+
+</div><!-- /.app-root -->
+
+<script>
+  /* Ripple hover — track mouse pos on .rip elements */
+  document.addEventListener('mousemove', (e) => {
+    const rips = document.querySelectorAll('.rip');
+    rips.forEach(el => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      el.style.setProperty('--my', `${e.clientY - r.top}px`);
+    });
+  });
+
+  /* Rail button toggle — klik untuk active */
+  document.querySelectorAll('.rail-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.rail-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  /* SourcePanel toggle */
+  function toggleSP() {
+    const body = document.getElementById('spBody');
+    const chevron = document.getElementById('spChevron');
+    const isOpen = body.classList.toggle('open');
+    chevron.classList.toggle('open', isOpen);
+  }
+
+  /* Clip card select toggle */
+  document.querySelectorAll('.cc').forEach(card => {
+    card.addEventListener('click', () => {
+      const wasSelected = card.classList.contains('sel');
+      document.querySelectorAll('.cc').forEach(c => c.classList.remove('sel'));
+      if (!wasSelected) card.classList.add('sel');
+    });
+  });
+</script>
+
+</body>
+</html>

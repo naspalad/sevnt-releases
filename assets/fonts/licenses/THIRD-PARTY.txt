@@ -1,0 +1,63 @@
+Caption "Gaya kata" templates (src/kinetic-title.js, CC_* entries)
+------------------------------------------------------------------
+Design ideas adapted from the CaptionCat preset catalog
+https://github.com/ItisShikhar/captioncat
+
+MIT License
+
+Copyright (c) 2026 Shikhar Srivastava
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Fonts bundled for these templates (assets/fonts), each under its own licence
+in this folder: Inter (OFL; static SOCL instances made with fontTools),
+Sour Gummy (OFL; static instance), Noto Sans (OFL; static instance), Bangers
+(OFL), Staatliches (OFL), DM Serif Text (OFL), Luckiest Guy (Apache 2.0),
+Open Sauce Two Bold Italic (OFL; renamed to its own family like the bundled
+Open Sauce Two Bold, glyphs unchanged).
+
+Added 2026-10-12:
+- Liberation Sans Narrow Bold 1.07.5 (Red Hat; GPLv2 with font exception —
+  see liberation-sans-narrow-LICENSE.txt / -COPYING.txt). Unmodified.
+- Bootzy TM, Bitblast Sans/Serif (+ Textured) by Edignwn Type, ATP-SaltedButter
+  by Typeparties, Slow Living Club (Rounded/Outline) by Davide Bassu —
+  commercial faces bundled under app/embedding licences held by SOCL Visuals
+  Studio. Files unmodified. Not for redistribution outside the app.
+
+Added 2026-11-15 (caption animation presets):
+- Inter 18pt Bold / Regular / SemiBold (static optical-size files from Inter 4.x; OFL, see inter-OFL.txt).
+  Files unmodified; the app maps the preset names "Inter Bold/Regular/SemiBold" to these faces.
+- Playfair Display Italic (Claus Eggers Sørensen; OFL). File unmodified.
+- Helvetica Neue Light / Medium / Roman / Bold (Linotype / Monotype; COMMERCIAL). Copied from the licensed
+  copy installed on the developer machine. A licence for embedding / redistribution is required before
+  this app is shared or sold to other people; otherwise replace them with a free look-alike (e.g. Inter).
+
+Corinthia (Corinthia-Regular.ttf) - SIL Open Font License 1.1 (Google Fonts). Free for commercial use.
+PT Serif Italic (PTSerif-Italic.ttf) - SIL Open Font License 1.1 (ParaType). Free for commercial use.
+Brittany Signature (BrittanySignature.ttf) - PERSONAL USE ONLY per its readme. No commercial use
+  (including videos/YouTube/ads) without buying a licence from the author.
+Instrument Serif Italic (InstrumentSerif-Italic.ttf) - SIL Open Font License 1.1. Free for commercial use.
+Inter Medium (Inter-Medium.ttf, Inter 4.1) - SIL Open Font License 1.1. Free for commercial use.
+
+
+Bebas Neue (BebasNeue-Regular.ttf) - SIL Open Font License 1.1, Dharma Type.
+Playfair Display Regular (PlayfairDisplay-Regular.ttf) - SIL Open Font License 1.1, Claus Eggers Sorensen.
+Inter Light (Inter-Light.ttf, Inter 4.1) - SIL Open Font License 1.1, The Inter Project Authors.
+Georgia (Georgia.ttf), Helvetica Neue Heavy (HelveticaNeue-Heavy.otf, Helvetica Neue LT Std), Snell Roundhand (SnellRoundhand-BoldScript.ttf, SnellRoundhand-Script.ttf):
+  commercial / proprietary faces supplied by the app owner. Their licences do not allow redistribution to third parties: confirm you hold a licence that covers shipping them in the installer.
