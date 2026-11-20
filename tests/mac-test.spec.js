@@ -3,7 +3,7 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-// Perpanjang batas waktu test menjadi 2 menit (120 detik) karena cold-start Python/Whisper di macOS bisa butuh waktu
+// Perpanjang timeout menjadi 120 detik agar verifikasi binary Python di arm64 tidak terpotong
 test.setTimeout(120000);
 
 test('Test buka SEVNT di macOS & cek tampilan', async () => {
@@ -23,22 +23,20 @@ test('Test buka SEVNT di macOS & cek tampilan', async () => {
 
   console.log(`1. Menjalankan aplikasi (${process.arch}) dari:`, appPath);
 
-  // Tambahkan argumen --no-sandbox dan tangkap semua output terminal dari aplikasi
   const electronApp = await electron.launch({
     executablePath: appPath,
     args: ['--no-sandbox', '--disable-gpu-sandbox'],
-    timeout: 60000,
+    timeout: 90000,
   });
 
-  console.log('2. Proses Electron berhasil terhubung ke Playwright!');
+  console.log('2. Proses Electron terhubung ke Playwright!');
 
-  // Cetak semua console.log dan error dari Main Process (termasuk log Python backend)
   const childProcess = electronApp.process();
   childProcess.stdout.on('data', (data) => console.log(`[APP STDOUT]: ${data.toString().trim()}`));
   childProcess.stderr.on('data', (data) => console.error(`[APP STDERR]: ${data.toString().trim()}`));
 
-  console.log('3. Menunggu jendela pertama (firstWindow) terbuka...');
-  const window = await electronApp.firstWindow({ timeout: 60000 });
+  console.log('3. Menunggu jendela pertama terbuka...');
+  const window = await electronApp.firstWindow({ timeout: 90000 });
   console.log('4. Jendela berhasil terbuka!');
 
   window.on('pageerror', (err) => console.error('[RENDERER ERROR]:', err));
