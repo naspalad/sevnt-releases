@@ -3,18 +3,12 @@ const { test, expect } = require('@playwright/test');
 const path = require('path');
 const fs = require('fs');
 
-// Perpanjang timeout menjadi 120 detik agar verifikasi binary Python di arm64 tidak terpotong
-test.setTimeout(120000);
+test.setTimeout(60000);
 
 test('Test buka SEVNT di macOS & cek tampilan', async () => {
   const releaseDir = path.join(__dirname, '../release');
   const subFolders = fs.readdirSync(releaseDir);
   const macFolder = subFolders.find((f) => f === `mac-${process.arch}` || f === 'mac');
-
-  if (!macFolder) {
-    throw new Error(`Folder build mac tidak ditemukan di ${releaseDir}. Isi: ${subFolders.join(', ')}`);
-  }
-
   const targetDir = path.join(releaseDir, macFolder);
   const appBundle = fs.readdirSync(targetDir).find((file) => file.endsWith('.app'));
   const macOsDir = path.join(targetDir, appBundle, 'Contents/MacOS');
@@ -25,25 +19,47 @@ test('Test buka SEVNT di macOS & cek tampilan', async () => {
 
   const electronApp = await electron.launch({
     executablePath: appPath,
-    args: ['--no-sandbox', '--disable-gpu-sandbox'],
-    timeout: 90000,
+    // Tambahkan --disable-gpu & software rendering agar tidak gagal inisialisasi GPU di VM macOS
+    args: [
+      '--no-sandbox',
+      '--disable-gpu',
+      '--disable-gpu-compositing',
+      '--use-gl=angle',
+      '--use-angle=swiftshader',
+      '--enable-logging'
+    ],
+    env: {
+      ...process.env,
+      ELECTRON_ENABLE_LOGGING: '1',
+      NODE_ENV: 'production'
+    },
+    timeout: 30000,
   });
 
-  console.log('2. Proses Electron terhubung ke Playwright!');
-
+  // Tangkap langsung jika aplikasi tiba-tiba menutup (quit) beserta exit code-nya!
   const childProcess = electronApp.process();
-  childProcess.stdout.on('data', (data) => console.log(`[APP STDOUT]: ${data.toString().trim()}`));
-  childProcess.stderr.on('data', (data) => console.error(`[APP STDERR]: ${data.toString().trim()}`));
+  childProcess.stdout.on('data', (data) => console.log(`[STDOUT]: ${data.toString().trim()}`));
+  childProcess.stderr.on('data', (data) => console.error(`[STDERR]: ${data.toString().trim()}`));
+  childProcess.on('exit', (code, signal) => {
+    console.error(`!!! APLIKASI BERHENTI LEBIH AWAL! Exit Code: ${code}, Signal: ${signal} !!!`);
+  });
+
+  // Evaluasi status internal Electron main process
+  const appInfo = await electronApp.evaluate(async ({ app }) => {
+    return {
+      isReady: app.isReady(),
+      appPath: app.getAppPath(),
+      userData: app.getPath('userData'),
+    };
+  });
+  console.log('2. Info Electron Main Process:', appInfo);
 
   console.log('3. Menunggu jendela pertama terbuka...');
-  const window = await electronApp.firstWindow({ timeout: 90000 });
+  const window = await electronApp.firstWindow({ timeout: 30000 });
   console.log('4. Jendela berhasil terbuka!');
 
-  window.on('pageerror', (err) => console.error('[RENDERER ERROR]:', err));
-  window.on('console', (msg) => console.log(`[RENDERER LOG]: ${msg.text()}`));
-
   await window.waitForLoadState('domcontentloaded');
-  await window.waitForTimeout(5000);
+  await window.waitForTimeout(4000);
 
   const screenshotPath = `hasil-test-macos-${process.arch}.png`;
   await window.screenshot({ path: screenshotPath });
