@@ -67,7 +67,8 @@ jobs:
       - name: Install engine dependencies
         run: |
           OUT="build/engine-runtime/darwin-${{ matrix.arch }}"
-          uv pip install --python "$OUT/bin/python3" --system -r engine/requirements.upstream.txt
+          "$OUT/bin/python3" -c 'import pathlib,sysconfig; (pathlib.Path(sysconfig.get_path("stdlib"))/"EXTERNALLY-MANAGED").unlink(missing_ok=True)'
+          uv pip install --python "$OUT/bin/python3" -r engine/requirements.upstream.txt
 
       - name: Runtime self-check
         run: |
