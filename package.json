@@ -20,6 +20,7 @@
     "@ffprobe-installer/darwin-arm64@5.0.1": true
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.1",
     "electron": "^45.2.3",
     "electron-builder": "^25.1.8",
     "rcedit": "^4.0.1"

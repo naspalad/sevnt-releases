@@ -8,6 +8,7 @@ on:
       - "engine/**"
       - "scripts/**"
       - "src/**"
+      - "tests/**"
       - "package.json"
       - "electron-builder.yml"
       - ".github/workflows/macos-runtime.yml"
@@ -90,6 +91,18 @@ jobs:
           else
             npm run build:mac:x64
           fi
+
+      - name: Test macOS App UI & Runtime
+        run: npx playwright test tests/mac-test.spec.js
+
+      - name: Upload macOS Test Screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEVNT-macOS-Test-${{ matrix.arch }}
+          path: |
+            hasil-test-macos-*.png
+            test-results/
 
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
