@@ -1,4 +1,4 @@
-﻿name: Build SEVNT macOS
+name: Build SEVNT macOS
 
 on:
   workflow_dispatch:
@@ -67,7 +67,7 @@ jobs:
       - name: Install engine dependencies
         run: |
           OUT="build/engine-runtime/darwin-${{ matrix.arch }}"
-          uv pip install --python "$OUT/bin/python3" -r engine/requirements.upstream.txt
+          uv pip install --python "$OUT/bin/python3" --system -r engine/requirements.upstream.txt
 
       - name: Runtime self-check
         run: |
