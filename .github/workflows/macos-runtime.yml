@@ -1,4 +1,4 @@
-name: Build SEVNT macOS
+﻿name: Build SEVNT macOS
 
 on:
   workflow_dispatch:
@@ -12,6 +12,7 @@ on:
       - "package.json"
       - "electron-builder.yml"
       - ".github/workflows/macos-runtime.yml"
+      - "sevnt-main.js"
 
 permissions:
   contents: read
