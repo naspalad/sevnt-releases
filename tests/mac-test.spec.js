@@ -17,42 +17,41 @@ test('Test buka SEVNT di macOS & cek tampilan', async () => {
 
   console.log(`1. Menjalankan aplikasi (${process.arch}) dari:`, appPath);
 
+  // Jalankan TANPA custom args agar process.argv bersih seperti klik user asli
   const electronApp = await electron.launch({
     executablePath: appPath,
-    // Tambahkan --disable-gpu & software rendering agar tidak gagal inisialisasi GPU di VM macOS
-    args: [
-      '--no-sandbox',
-      '--disable-gpu',
-      '--disable-gpu-compositing',
-      '--use-gl=angle',
-      '--use-angle=swiftshader',
-      '--enable-logging'
-    ],
-    env: {
-      ...process.env,
-      ELECTRON_ENABLE_LOGGING: '1',
-      NODE_ENV: 'production'
-    },
     timeout: 30000,
   });
 
-  // Tangkap langsung jika aplikasi tiba-tiba menutup (quit) beserta exit code-nya!
   const childProcess = electronApp.process();
   childProcess.stdout.on('data', (data) => console.log(`[STDOUT]: ${data.toString().trim()}`));
   childProcess.stderr.on('data', (data) => console.error(`[STDERR]: ${data.toString().trim()}`));
   childProcess.on('exit', (code, signal) => {
-    console.error(`!!! APLIKASI BERHENTI LEBIH AWAL! Exit Code: ${code}, Signal: ${signal} !!!`);
+    console.error(`!!! APLIKASI KELUAR! Exit Code: ${code}, Signal: ${signal} !!!`);
   });
 
-  // Evaluasi status internal Electron main process
-  const appInfo = await electronApp.evaluate(async ({ app }) => {
+  // Pasang penyadap pada app.quit & process.exit untuk mencetak baris kode pemanggilnya!
+  const debugInfo = await electronApp.evaluate(async ({ app, BrowserWindow }) => {
+    const origQuit = app.quit.bind(app);
+    app.quit = (...args) => {
+      console.error('>>> TERDETEKSI app.quit() DIPANGGIL DARI:\n', new Error().stack);
+      return origQuit(...args);
+    };
+
+    const origExit = app.exit.bind(app);
+    app.exit = (...args) => {
+      console.error('>>> TERDETEKSI app.exit() DIPANGGIL DARI:\n', new Error().stack);
+      return origExit(...args);
+    };
+
     return {
-      isReady: app.isReady(),
-      appPath: app.getAppPath(),
-      userData: app.getPath('userData'),
+      argv: process.argv,
+      windowCount: BrowserWindow.getAllWindows().length,
+      isReady: app.isReady()
     };
   });
-  console.log('2. Info Electron Main Process:', appInfo);
+
+  console.log('2. Status & Argumen Startup:', JSON.stringify(debugInfo, null, 2));
 
   console.log('3. Menunggu jendela pertama terbuka...');
   const window = await electronApp.firstWindow({ timeout: 30000 });
