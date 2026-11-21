@@ -4,13 +4,17 @@ const { test, expect } = require('@playwright/test');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const ffmpeg = require('ffmpeg-static');
-const ffprobe = require('@ffprobe-installer/ffprobe').path;
+
+const ffmpeg = process.env.SEVNT_QA_FFMPEG_BIN || require('ffmpeg-static');
+const ffprobe = process.env.SEVNT_QA_FFPROBE_BIN || require('@ffprobe-installer/ffprobe').path;
 
 const fixture = path.join(__dirname, 'fixtures', 'qa-source.mp4');
 const output = path.resolve('test-results', 'qa-render-output.mp4');
 
 function run(binary, args) {
+  if (!binary || !fs.existsSync(binary)) {
+    throw new Error(`Required FFmpeg tool is missing or not executable: ${binary || '(empty path)'}`);
+  }
   const result = spawnSync(binary, args, { encoding: 'utf8' });
   if (result.error) throw result.error;
   if (result.status !== 0) {
