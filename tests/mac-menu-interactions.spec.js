@@ -170,8 +170,8 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
 
     await expect(page.locator('#gb_renderAll')).toBeVisible();
     await page.locator('#gb_renderAll').click();
-    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length).toBe(2, { timeout: 60000 });
-    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length).toBeGreaterThanOrEqual(4, { timeout: 60000 });
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 }).toBe(2);
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
   });
 
 
