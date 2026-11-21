@@ -25,19 +25,29 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
 
   const calls = async () => page.evaluate(() => window.qaBridge.getCalls());
 
-  test('Clips/source menu exposes import, transcript and pipeline actions', async () => {
+  test('Clips imports the prepared video and attaches/clears a transcript', async () => {
     await expect(page.locator('#urlInput')).toBeVisible();
     await expect(page.locator('#pickVideo')).toBeAttached();
     await expect(page.locator('#im_attach')).toBeAttached();
     await expect(page.locator('#runPipeline')).toBeVisible();
 
     await page.locator('#pickVideo').click();
+    await expect(page.locator('#importMeta')).toBeVisible();
+    await expect(page.locator('#im_file')).toContainText('qa-source.mp4');
     await expect.poll(async () => (await calls()).some(x => x.name === 'pickVideo')).toBe(true);
 
-    // Transcript attachment is intentionally hidden until a source file is selected.
-    // The QA picker returns null, so this isolated suite cannot enter that state.
-    await expect(page.locator('#im_attach')).toBeAttached();
-    await expect(page.locator('#im_attach')).toBeHidden();
+    await expect(page.locator('#im_attach')).toBeVisible();
+    await page.locator('#im_attach').click();
+    await expect(page.locator('#im_sub')).toBeVisible();
+    await expect(page.locator('#im_sub')).toContainText('qa-transcript.srt');
+    await expect.poll(async () => (await calls()).some(x => x.name === 'pickSubtitle')).toBe(true);
+
+    await page.locator('#im_subClear').click();
+    await expect(page.locator('#im_sub')).toBeHidden();
+    await expect(page.locator('#im_subClear')).toBeHidden();
+
+    // The isolated QA bridge still mocks runPipeline; highlight detection and
+    // real render coverage are deliberately not asserted by this import test.
   });
 
   test('Clip Settings controls accept changes and expose the configuration groups', async () => {
