@@ -13,7 +13,11 @@ test.describe('SEVNT macOS isolated dashboard runtime', () => {
     });
     page = await app.firstWindow();
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('#panelBody')).toBeVisible({ timeout: 30000 });
+    // The app intentionally opens on Clip Results. The inspector (including
+    // #panelBody) lives inside #captionPage and stays hidden until a clip is
+    // selected, so it is not a valid initial-load readiness check.
+    await expect(page.locator('#clipsPage')).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('#captionPage')).toBeHidden();
   });
 
   test.afterEach(async () => {
