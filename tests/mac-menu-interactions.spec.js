@@ -81,16 +81,28 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#wm_size')).toBeAttached();
     await expect(page.locator('#wm_op')).toBeAttached();
 
-    await page.locator('.wm-anchor-cell[data-anchor="tl"]').click();
-    await page.locator('#wm_x').evaluate(el => {
-      el.value = '12';
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-      el.dispatchEvent(new Event('change', { bubbles: true }));
+    await page.locator('#wm_file').setInputFiles({
+      name: 'qa-watermark.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pXcAAAAASUVORK5CYII=', 'base64'),
     });
+    await expect.poll(async () => (await calls()).some(x => x.name === 'watermark.saveAsset'), { timeout: 15000 }).toBe(true);
+    await expect(page.locator('#wm_enabled')).toBeChecked();
+    await page.locator('#wm_enabled').uncheck({ force: true });
+    await expect(page.locator('#wm_enabled')).not.toBeChecked();
+    await page.locator('#wm_enabled').check({ force: true });
+    await page.locator('.wm-anchor-cell[data-anchor="tl"]').click();
+
+    for (const [id, value] of [['#wm_x', '12'], ['#wm_y', '14'], ['#wm_size', '22'], ['#wm_op', '45']]) {
+      await page.locator(id).evaluate((el, v) => {
+        el.value = v;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, value);
+    }
     await page.locator('#wm_line_add').click();
     await expect(page.locator('#wmLines .wm-line')).toHaveCount(2);
     await page.locator('#wmLines .wm-line-text').first().fill('SEVNT QA');
-
     await expect.poll(async () => (await calls()).some(x => x.name === 'setSettings')).toBe(true);
   });
 
