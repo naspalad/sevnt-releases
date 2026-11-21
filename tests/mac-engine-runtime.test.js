@@ -11,7 +11,7 @@ const root = path.join(__dirname, '..');
 const runtimeRoot = path.join(root, 'build', 'engine-runtime', `darwin-${process.arch}`);
 const pythonPath = path.join(runtimeRoot, 'bin', 'python3');
 
-test('bundled Python engine starts, enforces its bearer token, serves capabilities, and shuts down', { timeout: 120000 }, async (t) => {
+test('bundled Python engine starts, enforces its bearer token, serves capabilities, and shuts down', { timeout: 360000 }, async (t) => {
   assert.ok(fs.existsSync(pythonPath), `Python runtime missing: ${pythonPath}`);
   assert.ok(fs.existsSync(path.join(root, 'engine', 'sevnt_engine', 'server.py')), 'Engine server source missing');
 
@@ -66,6 +66,27 @@ test('bundled Python engine starts, enforces its bearer token, serves capabiliti
     });
     assert.equal(badAsr.status, 400);
     assert.equal((await badAsr.json()).error, 'bad_path');
+
+    // macOS built-in speech synthesis provides a deterministic real-speech fixture.
+    const speechPath = path.join(temp, 'qa-speech.wav');
+    const speech = require('node:child_process').spawnSync('say', [
+      '-o', speechPath, '--file-format=WAVE', '--data-format=LEI16@16000',
+      'Hello, this is a short test of the SEVNT transcription engine. The quick brown fox jumps over the lazy dog.',
+    ], { encoding: 'utf8', timeout: 30000 });
+    assert.equal(speech.status, 0, `macOS speech synthesis failed: ${speech.stderr || speech.error || speech.status}`);
+    assert.ok(fs.existsSync(speechPath) && fs.statSync(speechPath).size > 10000, 'Speech fixture was not generated');
+
+    const { transcribeViaEngine } = require('../src/engine/engine-asr');
+    const transcription = await transcribeViaEngine(supervisor, {
+      audioPath: speechPath, model: 'tiny', language: 'en', pollMs: 500,
+      timeoutMs: 240000, allowDownload: true,
+    });
+    const transcriptText = transcription.words.map((word) => word.text.toLowerCase().replace(/[^a-z]/g, '')).join(' ');
+    assert.ok(transcription.words.length >= 10, `Too few recognized words: ${transcriptText}`);
+    assert.match(transcriptText, /transcription|test/, `Expected speech not found: ${transcriptText}`);
+    assert.match(transcriptText, /fox|quick/, `Expected speech not found: ${transcriptText}`);
+    assert.ok(transcription.words.every((word) => word.end > word.start), 'Word timestamps are invalid');
+    assert.equal(transcription.modelUsed, 'tiny');
 
     await supervisor.stop();
     assert.equal(supervisor.status.state, STATES.STOPPED);
