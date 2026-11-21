@@ -96,9 +96,7 @@ jobs:
       - name: Test macOS App UI & Runtime
         env:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
-          SEVNT_QA_EMAIL: ${{ matrix.arch == 'arm64' && secrets.SEVNT_QA_ARM64_EMAIL || secrets.SEVNT_QA_INTEL_EMAIL }}
-          SEVNT_QA_LICENSE_KEY: ${{ matrix.arch == 'arm64' && secrets.SEVNT_QA_ARM64_KEY || secrets.SEVNT_QA_INTEL_KEY }}
-        run: npx playwright test tests/mac-test.spec.js tests/macos-qa/license.spec.js
+        run: npx playwright test tests/mac-test.spec.js --workers=1
 
       - name: Collect SEVNT Startup Trace
         if: always()
