@@ -3,7 +3,7 @@ name: Build SEVNT macOS
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, qa/macos-runtime-smoke-no-activation]
     paths:
       - "engine/**"
       - "scripts/**"
