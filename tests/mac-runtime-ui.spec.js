@@ -17,6 +17,12 @@ test.describe('SEVNT macOS isolated dashboard runtime', () => {
   });
 
   test.afterEach(async () => {
+    if (page) {
+      await page.screenshot({
+        path: test.info().outputPath('dashboard.png'),
+        fullPage: true,
+      }).catch(() => {});
+    }
     if (app) await app.close().catch(() => {});
   });
 
