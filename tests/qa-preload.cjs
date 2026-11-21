@@ -1,5 +1,13 @@
 'use strict';
 
+// QA starts from a fresh temporary Electron profile for each test. Mark the
+// first-run tutorial as already completed before renderer scripts execute so
+// its full-screen overlay cannot intercept UI automation clicks. Production
+// onboarding behavior is unchanged; this preload is used only by the QA app.
+try {
+  window.localStorage.setItem('sevnt.tour.v3', '1');
+} catch {}
+
 const { contextBridge } = require('electron');
 const calls = [];
 const record = (name, value) => { calls.push({ name, value: value ?? null }); };
