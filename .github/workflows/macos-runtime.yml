@@ -111,7 +111,16 @@ jobs:
           const fs = require('node:fs');
           const stat = fs.statSync('tests/fixtures/qa-source.mp4');
           if (stat.size < 10000) throw new Error('Generated QA MP4 is unexpectedly small');
-          console.log('QA fixture generated:', stat.size, 'bytes');
+          const ffprobe = require('@ffprobe-installer/ffprobe').path;
+          const probe = spawnSync(ffprobe, [
+            '-v', 'error', '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            'tests/fixtures/qa-source.mp4'
+          ], { encoding: 'utf8' });
+          if (probe.status !== 0) throw new Error('ffprobe rejected QA MP4: ' + probe.stderr);
+          const duration = Number(probe.stdout.trim());
+          if (!Number.isFinite(duration) || duration < 3.5) throw new Error('QA MP4 duration invalid: ' + probe.stdout);
+          console.log('QA fixture validated:', stat.size, 'bytes;', duration, 'seconds');
           NODE
 
       - name: Verify navigation contract
