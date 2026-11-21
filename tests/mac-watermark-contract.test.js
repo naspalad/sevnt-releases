@@ -36,14 +36,14 @@ test('text watermark sanitization removes empty lines and bounds style values', 
   const value = wm.sanitize({
     enabled: true,
     text: {
-      content: '  SEVNT  \\n\\n  @SEVENTY  ',
+      content: '  SEVNT  \n\n  @SEVENTY  ',
       font: 'not-a-bundled-font',
       color: 'red',
       sizePct: 99,
       opacity: -1,
     },
   });
-  assert.equal(value.text.content, 'SEVNT\\n@SEVENTY');
+  assert.equal(value.text.content, 'SEVNT\n@SEVENTY');
   assert.equal(value.text.font, wm.DEFAULT_TEXT.font);
   assert.equal(value.text.color, '#ffffff');
   assert.equal(value.text.sizePct, 20);
