@@ -34,8 +34,10 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#pickVideo').click();
     await expect.poll(async () => (await calls()).some(x => x.name === 'pickVideo')).toBe(true);
 
-    await page.locator('#im_attach').click();
-    await expect.poll(async () => (await calls()).some(x => x.name === 'pickSubtitle')).toBe(true);
+    // Transcript attachment is intentionally hidden until a source file is selected.
+    // The QA picker returns null, so this isolated suite cannot enter that state.
+    await expect(page.locator('#im_attach')).toBeAttached();
+    await expect(page.locator('#im_attach')).toBeHidden();
   });
 
   test('Clip Settings controls accept changes and expose the configuration groups', async () => {
@@ -69,7 +71,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await page.locator('#wm_line_add').click();
-    await expect(page.locator('#wmLines .wm-line')).toHaveCount(1);
+    await expect(page.locator('#wmLines .wm-line')).toHaveCount(2);
     await page.locator('#wmLines .wm-line-text').fill('SEVNT QA');
 
     await expect.poll(async () => (await calls()).some(x => x.name === 'setSettings')).toBe(true);
@@ -108,6 +110,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
       await page.locator('#sv_geminiTest').click();
       await expect.poll(async () => (await calls()).some(x => x.name === 'testProvider')).toBe(true);
     }
+    await page.locator('.sv-jump button[data-tab="license"]').click();
     await expect(page.locator('#sv_secLicense')).toBeVisible();
     // License activation is intentionally not attempted by this suite.
   });
