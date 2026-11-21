@@ -143,6 +143,9 @@ jobs:
       - name: Test isolated SEVNT dashboard runtime
         run: npx playwright test tests/mac-runtime-ui.spec.js --workers=1
 
+      - name: Test watermark state and override contracts
+        run: node --test tests/mac-watermark-contract.test.js
+
       - name: Test native FFmpeg render output
         run: npx playwright test tests/mac-ffmpeg-runtime.spec.js --workers=1
 
