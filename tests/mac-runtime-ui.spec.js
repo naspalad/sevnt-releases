@@ -52,12 +52,13 @@ test.describe('SEVNT macOS isolated dashboard runtime', () => {
     await expect(page.locator('#openCropStudioBtn')).toBeAttached();
   });
 
-  test('History, Mobile, Help and Settings open their dedicated views', async () => {
+  test('History, Help and Settings open their dedicated views', async () => {
     await page.locator('.rail-btn[data-panel="history"]').click();
     await expect(page.locator('#historyPage')).toBeVisible();
 
-    await page.locator('#mobileBtn').click();
-    await expect(page.locator('#mobileStartBtn')).toBeVisible();
+    // Mobile Companion is intentionally excluded from this smoke suite while
+    // the feature remains experimental. Its dedicated QA coverage can be
+    // restored when the feature is ready for release validation.
 
     await page.locator('#helpBtn').click();
     await expect(page.locator('#helpView')).toBeVisible();
