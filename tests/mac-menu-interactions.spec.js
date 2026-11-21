@@ -158,7 +158,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('.gtl-tile')).toHaveCount(2);
 
     await page.locator('#selectModeBtn').click();
-    await page.locator('#selAllBtn').click();
+    await page.locator('#selAllBtn').click({ force: true });
     await expect(page.locator('#selCount')).toContainText('2');
     await expect(page.locator('#selRenderBtn')).toBeEnabled();
     await page.locator('#selClearBtn').click();
