@@ -3,6 +3,7 @@
 const { _electron: electron } = require('playwright');
 const { test, expect } = require('@playwright/test');
 const path = require('node:path');
+const fs = require('node:fs');
 
 test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
   test.setTimeout(90000);
@@ -177,11 +178,8 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     const outputs = rendered.map(x => x.value && x.value.output).filter(Boolean);
     expect(outputs.length).toBeGreaterThanOrEqual(4);
     for (const output of outputs) {
-      const result = await page.evaluate(async (file) => {
-        const r = await window.socl.pathForFile(file);
-        return r || file;
-      }, output);
-      expect(result).toBeTruthy();
+      expect(fs.existsSync(output)).toBe(true);
+      expect(fs.statSync(output).size).toBeGreaterThan(1000);
     }
   });
 
