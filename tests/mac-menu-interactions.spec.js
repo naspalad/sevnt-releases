@@ -173,15 +173,45 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#gb_renderAll').click();
     await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 }).toBe(2);
     await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
+    const rendered = (await calls()).filter(x => x.name === 'ffmpegRender');
+    const outputs = rendered.map(x => x.value && x.value.output).filter(Boolean);
+    expect(outputs.length).toBeGreaterThanOrEqual(4);
+    for (const output of outputs) {
+      const result = await page.evaluate(async (file) => {
+        const r = await window.socl.pathForFile(file);
+        return r || file;
+      }, output);
+      expect(result).toBeTruthy();
+    }
   });
 
 
-  test('Editor opens for a rendered clip and exposes editable caption controls', async () => {
+  test('Editor edits caption style, titles and manual captions and renders the changes', async () => {
     await seedQaClips();
     await page.locator('#openEditorBtn').click();
     await expect(page.locator('#captionStudio')).toBeVisible();
     await expect(page.locator('#captionStudioBody')).not.toBeEmpty();
-    await expect(page.locator('#captionStudioBody input, #captionStudioBody textarea, #captionStudioBody button').first()).toBeAttached();
+
+    await page.locator('#ce_case button[data-v="upper"]').click();
+    await expect(page.locator('#ce_case button[data-v="upper"]')).toHaveClass(/active/);
+    await page.locator('#ce_fs').evaluate(el => {
+      el.value = '72';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await page.locator('#ce_anim button[data-v="fade"]').click();
+    await expect(page.locator('#ce_anim button[data-v="fade"]')).toHaveClass(/active/);
+
+    await page.locator('#ce_tabs button[data-tab="titles"]').click();
+    await page.locator('#ce_addTitle').click();
+    await expect(page.locator('#ce_titles_list').locator('> *')).toHaveCount(1);
+
+    await page.locator('#ce_tabs button[data-tab="manualcap"]').click();
+    await page.locator('#ce_addMc').click();
+    await expect(page.locator('#ce_mc_list').locator('> *')).toHaveCount(1);
+
+    await page.locator('#ce_render').click();
+    await expect.poll(async () => (await calls()).some(x => x.name === 'sevnt.applyCaption' || x.name === 'renderEdit'), { timeout: 60000 }).toBe(true);
     await page.locator('#csEditorClose').click();
     await expect(page.locator('#captionStudio')).toBeHidden();
   });
@@ -205,6 +235,11 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#csZoomVal')).toContainText('70%');
     await page.locator('#csAddKf').click();
     await expect(page.locator('#csKfCount')).toContainText('1');
+    await expect(page.locator('#csUndo')).toBeEnabled();
+    await page.locator('#csUndo').click();
+    await page.locator('#csRedo').click();
+    await expect(page.locator('#csKfCount')).toContainText('1');
+    await page.locator('#csReset').click();
     await page.locator('#csApplyAll').click();
     const beforeRenderEdit = (await calls()).filter(x => x.name === 'renderEdit').length;
     const beforeApplyCrop = (await calls()).filter(x => x.name === 'applyCrop').length;
@@ -239,6 +274,9 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#ssKfCount')).toContainText('1');
     await page.locator('#ssApply').click();
     await expect.poll(async () => (await calls()).some(x => x.name === 'applyCrop'), { timeout: 60000 }).toBe(true);
+    await page.locator('#ssRemoveV2').click();
+    await expect(page.locator('#ssRemoveV2')).toBeHidden();
+    await expect(page.locator('#ssToggleV1')).toHaveClass(/primary-btn/);
   });
 
 });
