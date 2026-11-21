@@ -47,7 +47,8 @@ test('bundled Python engine starts, enforces its bearer token, serves capabiliti
     assert.equal(profileResponse.status, 200);
     const profile = await profileResponse.json();
     assert.equal(profile.platform, 'darwin');
-    assert.ok(profile.machine, 'Engine did not report machine architecture');
+    const expectedMachine = process.env.SEVNT_QA_EXPECTED_ARCH === 'x64' ? 'x86_64' : 'arm64';
+    assert.equal(profile.machine, expectedMachine, 'Python runtime architecture does not match the CI target');
     assert.match(profile.python, /^3\\.11\\./, 'Engine is not running the expected Python 3.11 runtime');
 
     const capsResponse = await fetch(`${base}/api/v1/system/whisper-capabilities`, { headers });
