@@ -72,7 +72,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     });
     await page.locator('#wm_line_add').click();
     await expect(page.locator('#wmLines .wm-line')).toHaveCount(2);
-    await page.locator('#wmLines .wm-line-text').fill('SEVNT QA');
+    await page.locator('#wmLines .wm-line-text').first().fill('SEVNT QA');
 
     await expect.poll(async () => (await calls()).some(x => x.name === 'setSettings')).toBe(true);
   });
