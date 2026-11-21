@@ -115,20 +115,36 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#clipsPage')).toBeVisible();
   });
 
-  test('Settings save and provider test controls invoke their QA bridge methods', async () => {
+  test('Settings exercise all provider key lifecycles, models, ASR, save and license controls', async () => {
     await page.locator('.rail-btn[data-panel="settings"]').click();
     await expect(page.locator('#settingsView')).toBeVisible();
-    await expect(page.locator('#sv_save')).toBeVisible();
+    const providers = ['gemini', 'groq', 'openai', 'openrouter', 'anthropic', 'sumopod'];
+
+    for (const provider of providers) {
+      const key = page.locator('#sv_' + provider + 'Key');
+      const testButton = page.locator('#sv_' + provider + 'Test');
+      const delButton = page.locator('#sv_' + provider + 'Del');
+      await key.fill('qa-' + provider + '-not-a-real-secret');
+      await expect(testButton).toBeEnabled();
+      await testButton.click();
+      await expect.poll(async () => (await calls()).filter(x => x.name === 'testProvider').length, { timeout: 15000 }).toBeGreaterThan(providers.indexOf(provider));
+      await expect(delButton).toBeVisible();
+      await delButton.click();
+      await expect(delButton).toHaveText('Yakin?');
+      await delButton.click();
+      await expect(delButton).toBeHidden();
+    }
+
+    await page.locator('#sv_geminiModel').selectOption({ index: 0 });
+    await page.locator('#sv_groqModel').selectOption({ index: 0 });
+    await page.locator('#sv_asrEngine').selectOption({ index: 0 });
     await page.locator('#sv_save').click();
     await expect.poll(async () => (await calls()).some(x => x.name === 'setSettings')).toBe(true);
 
-    await expect(page.locator('#sv_geminiTest')).toBeAttached();
-    if (await page.locator('#sv_geminiTest').isEnabled()) {
-      await page.locator('#sv_geminiTest').click();
-      await expect.poll(async () => (await calls()).some(x => x.name === 'testProvider')).toBe(true);
-    }
     await page.locator('.sv-jump button[data-tab="license"]').click();
     await expect(page.locator('#sv_secLicense')).toBeVisible();
+    await page.locator('#sv_licRefresh').click();
+    await expect.poll(async () => (await calls()).some(x => x.name === 'sevnt.licenseStatus')).toBe(true);
     // License activation is intentionally not attempted by this suite.
   });
 
