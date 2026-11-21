@@ -93,6 +93,9 @@ jobs:
             npm run build:mac:x64
           fi
 
+      - name: Verify navigation contract
+        run: node --test tests/mac-navigation-contract.test.js
+
       - name: Test macOS App UI & Runtime
         env:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
