@@ -25,6 +25,12 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
 
   const calls = async () => page.evaluate(() => window.qaBridge.getCalls());
 
+  async function seedQaClips() {
+    await page.locator('#pickVideo').click();
+    await page.locator('#runPipeline').click();
+    await expect(page.locator('.gtl-tile')).toHaveCount(2, { timeout: 60000 });
+  }
+
   test('Clips imports the prepared video and attaches/clears a transcript', async () => {
     await expect(page.locator('#urlInput')).toBeVisible();
     await expect(page.locator('#pickVideo')).toBeAttached();
@@ -166,6 +172,63 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#gb_renderAll').click();
     await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length).toBe(2, { timeout: 60000 });
     await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length).toBeGreaterThanOrEqual(4, { timeout: 60000 });
+  });
+
+
+  test('Editor opens for a rendered clip and exposes editable caption controls', async () => {
+    await seedQaClips();
+    await page.locator('#openEditorBtn').click();
+    await expect(page.locator('#captionStudio')).toBeVisible();
+    await expect(page.locator('#captionStudioBody')).not.toBeEmpty();
+    await expect(page.locator('#captionStudioBody input, #captionStudioBody textarea, #captionStudioBody button').first()).toBeAttached();
+    await page.locator('#csEditorClose').click();
+    await expect(page.locator('#captionStudio')).toBeHidden();
+  });
+
+  test('Crop Studio changes aspect, zoom, keyframes and applies crop to the clip', async () => {
+    await seedQaClips();
+    await page.locator('.rail-btn[data-panel="crop"]').click();
+    await page.locator('#openCropStudioBtn').click();
+    await expect(page.locator('#cropStudio')).toBeVisible();
+    await expect.poll(() => page.locator('#csVideo').evaluate(v => v.readyState >= 1)).toBe(true, { timeout: 30000 });
+
+    for (const aspect of ['1:1', '16:9', 'free', '9:16']) {
+      await page.locator('#csAspect button[data-a="' + aspect + '"]').click();
+      await expect(page.locator('#csAspect button[data-a="' + aspect + '"]')).toHaveClass(/active/);
+    }
+    await page.locator('#csZoom').evaluate(el => {
+      el.value = '70';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await expect(page.locator('#csZoomVal')).toContainText('70%');
+    await page.locator('#csAddKf').click();
+    await expect(page.locator('#csKfCount')).toContainText('1');
+    await page.locator('#csApplyAll').click();
+    await page.locator('#csRender').click();
+    await expect.poll(async () => (await calls()).some(x => x.name === 'applyCrop'), { timeout: 60000 }).toBe(true);
+  });
+
+  test('Split Studio handles two sources, mute, swap, ratio, keyframes and apply', async () => {
+    await seedQaClips();
+    await page.locator('.rail-btn[data-panel="crop"]').click();
+    await page.locator('#openGamingSplitStudioBtn').click();
+    await expect(page.locator('#splitStudio')).toBeVisible();
+    await page.locator('#ssToggleV2').click();
+    await expect.poll(() => page.locator('#ssVideo2').evaluate(v => v.readyState >= 1), { timeout: 30000 }).toBe(true);
+    await expect(page.locator('#ssRemoveV2')).toBeVisible();
+    await page.locator('#ssMute1').click();
+    await page.locator('#ssMute2').click();
+    await page.locator('#ssSplitRatio').evaluate(el => {
+      el.value = '60';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await expect(page.locator('#ssSplitRatio')).toHaveValue('60');
+    await page.locator('#ssSwapBtn').click();
+    await page.locator('#ssAddKf').click();
+    await expect(page.locator('#ssKfCount')).toContainText('1');
+    await page.locator('#ssApply').click();
+    await expect.poll(async () => (await calls()).some(x => x.name === 'applyCrop'), { timeout: 60000 }).toBe(true);
   });
 
 });
