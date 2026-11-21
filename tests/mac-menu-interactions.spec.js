@@ -190,7 +190,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('.rail-btn[data-panel="crop"]').click();
     await page.locator('#openCropStudioBtn').click();
     await expect(page.locator('#cropStudio')).toBeVisible();
-    await expect.poll(() => page.locator('#csVideo').evaluate(v => v.readyState >= 1)).toBe(true, { timeout: 30000 });
+    await expect.poll(() => page.locator('#csVideo').evaluate(v => v.readyState >= 1), { timeout: 30000 }).toBe(true);
 
     for (const aspect of ['1:1', '16:9', 'free', '9:16']) {
       await page.locator('#csAspect button[data-a="' + aspect + '"]').click();
