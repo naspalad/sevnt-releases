@@ -85,6 +85,18 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Install system FFmpeg for QA
+        run: |
+          brew list ffmpeg >/dev/null 2>&1 || brew install ffmpeg
+          FFMPEG_BIN="$(command -v ffmpeg)"
+          FFPROBE_BIN="$(command -v ffprobe)"
+          test -x "$FFMPEG_BIN"
+          test -x "$FFPROBE_BIN"
+          "$FFMPEG_BIN" -version | head -n 1
+          "$FFPROBE_BIN" -version | head -n 1
+          echo "SEVNT_QA_FFMPEG_BIN=$FFMPEG_BIN" >> "$GITHUB_ENV"
+          echo "SEVNT_QA_FFPROBE_BIN=$FFPROBE_BIN" >> "$GITHUB_ENV"
+
       - name: Build SEVNT macOS app
         run: |
           if [ "${{ matrix.arch }}" = "arm64" ]; then
@@ -97,7 +109,9 @@ jobs:
         run: |
           mkdir -p tests/fixtures
           node - <<'NODE'
-          const ffmpeg = require('ffmpeg-static');
+          const ffmpeg = process.env.SEVNT_QA_FFMPEG_BIN;
+          const ffprobe = process.env.SEVNT_QA_FFPROBE_BIN;
+          if (!ffmpeg || !ffprobe) throw new Error('System FFmpeg/ffprobe paths were not exported by the setup step');
           const { spawnSync } = require('node:child_process');
           const result = spawnSync(ffmpeg, [
             '-y', '-f', 'lavfi', '-i', 'testsrc=size=640x360:rate=30',
@@ -111,12 +125,12 @@ jobs:
           const fs = require('node:fs');
           const stat = fs.statSync('tests/fixtures/qa-source.mp4');
           if (stat.size < 10000) throw new Error('Generated QA MP4 is unexpectedly small');
-          const ffprobe = require('@ffprobe-installer/ffprobe').path;
           const probe = spawnSync(ffprobe, [
             '-v', 'error', '-show_entries', 'format=duration',
             '-of', 'default=noprint_wrappers=1:nokey=1',
             'tests/fixtures/qa-source.mp4'
           ], { encoding: 'utf8' });
+          if (probe.error) throw probe.error;
           if (probe.status !== 0) throw new Error('ffprobe rejected QA MP4: ' + probe.stderr);
           const duration = Number(probe.stdout.trim());
           if (!Number.isFinite(duration) || duration < 3.5) throw new Error('QA MP4 duration invalid: ' + probe.stdout);
