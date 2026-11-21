@@ -133,4 +133,39 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#openOutputBtn').click();
     await expect.poll(async () => (await calls()).some(x => x.name === 'openOutput')).toBe(true);
   });
+
+  test('Clips runs deterministic highlights, filters, selection, preview and real FFmpeg batch render', async () => {
+    await page.locator('#pickVideo').click();
+    await expect(page.locator('#im_file')).toContainText('qa-source.mp4');
+    await page.locator('#runPipeline').click();
+
+    await expect(page.locator('.gtl-tile')).toHaveCount(2, { timeout: 60000 });
+    await expect(page.locator('.gtl-tile').first()).toContainText('QA Highlight One');
+    await expect(page.locator('.gtl-tile').last()).toContainText('QA Highlight Two');
+
+    await page.locator('#galleryChips [data-filter="hot"]').click();
+    await expect(page.locator('.gtl-tile')).toHaveCount(2);
+    await page.locator('#galleryChips [data-filter="saved"]').click();
+    await expect(page.locator('.gtl-tile')).toHaveCount(0);
+    await page.locator('#galleryChips [data-filter="all"]').click();
+    await expect(page.locator('.gtl-tile')).toHaveCount(2);
+
+    await page.locator('#selectModeBtn').click();
+    await page.locator('#selAllBtn').click();
+    await expect(page.locator('#selCount')).toContainText('2');
+    await expect(page.locator('#selRenderBtn')).toBeEnabled();
+    await page.locator('#selClearBtn').click();
+    await expect(page.locator('#selCount')).toContainText('0');
+    await page.locator('#selDoneBtn').click();
+
+    await page.locator('.gtl-tile').first().click();
+    await page.locator('#nextArrow').click();
+    await expect(page.locator('.gtl-tile.gtl-active')).toHaveAttribute('data-idx', '1');
+
+    await expect(page.locator('#gb_renderAll')).toBeVisible();
+    await page.locator('#gb_renderAll').click();
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length).toBe(2, { timeout: 60000 });
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length).toBeGreaterThanOrEqual(4, { timeout: 60000 });
+  });
+
 });
