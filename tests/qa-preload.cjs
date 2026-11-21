@@ -1,5 +1,16 @@
 'use strict';
 
+const fs = require('node:fs');
+const path = require('node:path');
+const qaVideo = path.join(__dirname, 'fixtures', 'qa-source.mp4');
+const qaTranscript = path.join(__dirname, 'fixtures', 'qa-transcript.srt');
+if (!fs.existsSync(qaVideo) || !fs.statSync(qaVideo).size) {
+  throw new Error('Prepared QA video fixture is missing: ' + qaVideo);
+}
+if (!fs.existsSync(qaTranscript) || !fs.statSync(qaTranscript).size) {
+  throw new Error('QA transcript fixture is missing: ' + qaTranscript);
+}
+
 // QA starts from a fresh temporary Electron profile for each test. Mark the
 // first-run tutorial as already completed before renderer scripts execute so
 // its full-screen overlay cannot intercept UI automation clicks. Production
@@ -20,8 +31,8 @@ const eventNoop = () => () => {};
 
 const socl = {
   platform: process.platform,
-  pickVideo: asyncResult('pickVideo', null),
-  pickSubtitle: asyncResult('pickSubtitle', null),
+  pickVideo: asyncResult('pickVideo', qaVideo),
+  pickSubtitle: asyncResult('pickSubtitle', qaTranscript),
   runPipeline: asyncResult('runPipeline', { ok: true, qa: true, clips: [] }),
   renderEdit: asyncResult('renderEdit', { ok: true, output: null }),
   batchRenderPlan: asyncResult('batchRenderPlan', { concurrency: 1 }),
