@@ -175,7 +175,7 @@ const socl = {
   revealClip: asyncResult('revealClip', { ok: true }),
   pathForFile: () => '',
   watermark: {
-    saveAsset: asyncResult('watermark.saveAsset', { path: path.join(os.tmpdir(), 'qa-watermark.png'), filename: 'qa.png', ext: 'png', bytes: 1 }),
+    saveAsset: asyncResult('watermark.saveAsset', (payload) => { const filename = String(payload && payload.filename || ''); const ext = path.extname(filename).toLowerCase(); if (!['.png', '.webp', '.jpg', '.jpeg'].includes(ext)) return { error: 'unsupported_file_type' }; return { path: path.join(os.tmpdir(), 'qa-watermark.png'), filename, ext: ext.slice(1), bytes: payload && payload.bytes ? payload.bytes.length : 1 }; }),
     deleteAsset: asyncResult('watermark.deleteAsset', { ok: true }),
   },
   history: {
