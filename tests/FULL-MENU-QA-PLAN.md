@@ -135,53 +135,57 @@ The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defin
 - Handle unavailable links/media.
 - Verify Help does not disturb workspace or selected project.
 
-## 4. Implemented renderer suite\n\nThe 88 case IDs are mapped in `tests/full-menu-functional.spec.js` across ten menu-level Playwright test blocks. The tests launch the isolated QA Electron harness, use prepared video/transcript fixtures, and assert visible controls, state transitions, bridge calls and deterministic FFmpeg output where the fixture supports it. The History mock now seeds a disposable QA session so open/preview/delete flows can be exercised without touching user files.\n\nRun command (not yet executed): `npm run test:qa:menu-coverage`. The existing narrower regression file remains available through `npm run test:qa:menu-legacy`. The GitHub macOS workflow now runs both suites and uploads the coverage report.\n\n**Granularity note:** IDs are grouped by menu-level Playwright test blocks, not yet split into 88 independent Playwright test functions. A failure in a menu block can therefore mark several IDs failed together. The next refinement is to split each ID into its own test and attach per-case evidence/diagnostics.\n\n## 5. Coverage-manifest validator
+## 4. Implemented renderer suite
 
-A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks that the ten required menus and all 88 unique case IDs remain present, that evidence fields are defined, and that production-proof/no-silent-skip policies cannot be accidentally removed. It does not launch the app or execute functional tests. Planned command: `node --test tests/full-menu-qa-plan.test.js`.
+The 88 case IDs are mapped in `tests/full-menu-functional.spec.js` across ten menu-level Playwright test blocks. The tests launch the isolated QA Electron harness, use prepared video/transcript fixtures, and assert visible controls, state transitions, bridge calls and deterministic FFmpeg output where the fixture supports it. The History mock seeds a disposable QA session so open/preview/delete flows can be exercised without touching user files.
 
-## 6. Harness design
+Run command (not yet executed): `npm run test:qa:menu-coverage`. The existing narrower regression file remains available through `npm run test:qa:menu-legacy`. The GitHub macOS workflow runs both suites and uploads the coverage report.
 
-- **Renderer suite:** Playwright against a real Electron window, deterministic media fixtures, controlled dialogs and isolated user-data directory.
-- **Production IPC suite:** launch the actual app entry point with the production preload; instrument IPC at the test boundary without replacing business handlers.
-- **Media suite:** use known video/audio fixtures; run actual FFmpeg/Python; inspect output via ffprobe and decode representative frames/audio.
-- **Persistence suite:** use a fresh user-data directory per test; write state, close Electron fully, relaunch, and verify persisted state.
+**Granularity note:** IDs are grouped by menu-level Playwright test blocks, not yet split into 88 independent Playwright test functions. A failure in a menu block can therefore mark several IDs failed together. The next refinement is to split each ID into its own test and attach per-case evidence/diagnostics.
+
+## 5. Coverage-manifest validator
+
+A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks the ten required menus, all 88 unique case IDs, and verifies that every planned ID is mapped in the functional Playwright suite. It does not launch the app or execute functional tests. Planned command: `node --test tests/full-menu-qa-plan.test.js`.
+
+## 6. Harness design and evidence limits
+
+- **Renderer suite (implemented, not executed):** Playwright against the isolated Electron QA harness with deterministic video/transcript fixtures and mock bridge responses.
+- **Production IPC suite (not implemented):** launch the actual app entry point with the production preload; instrument IPC at the test boundary without replacing business handlers.
+- **Media suite (partial existing checks):** the QA harness runs fixture FFmpeg and checks selected outputs; this is not yet the production Python/FFmpeg pipeline. Production exports still need ffprobe, frame and audio decode validation.
+- **Persistence suite (not implemented):** use a fresh user-data directory per test; write state, close Electron fully, relaunch, and verify settings, watermark and history survive restart.
 - **Safety:** provider, Telegram, license, update, cookies and destructive filesystem tests use dedicated test doubles/accounts/temp directories. No real customer credentials or production data.
 - **Artifacts:** Playwright trace, screenshot, console/main-process logs, output media, ffprobe JSON, case status and commit SHA.
 
-## 7. Execution order (not started)
+## 7. Remaining implementation order
 
-1. Complete the selector-to-handler-to-IPC inventory from the actual UI and source.
-2. Build reusable Electron fixtures and isolated user-data lifecycle.
-3. Implement and validate each menu's renderer interactions.
-4. Implement production IPC and side-effect assertions.
-5. Implement real media/output and restart-persistence assertions.
-6. Add the full suite to CI only after the harness is reviewed and locally validated.
-7. Run the full matrix on macOS ARM64 and x64; report every case, not only aggregate green/red.
+1. Split the ten menu-level blocks into 88 independently reportable test cases.
+2. Add precise per-case assertions and evidence: action, expected state, actual state, screenshot/trace and failure classification.
+3. Build a production Electron launcher using `sevnt-main.js` and `src/preload.js`, isolated user data and a dedicated valid QA license. Do not bypass the production license gate.
+4. Add production IPC tests for every menu operation and verify the corresponding main-process side effect.
+5. Add production media tests for render, crop, split, editor, watermark, subtitles, audio and output safety using FFmpeg/Python plus ffprobe/decode checks.
+6. Add restart-persistence tests for Settings, Watermark, History and Editor state where persistence is part of the contract.
+7. Run the full matrix on macOS ARM64 and x64 after explicit authorization and report every case, not only aggregate green/red.
 
 ## 8. Release gates
 
 - All 88 cases have an explicit status; no case silently omitted.
 - Renderer interactions pass on supported macOS architectures.
 - Production IPC tests use the real preload and main process.
-- Media tests use real FFmpeg/Python and ffprobe validation.
+- Media tests use the production FFmpeg/Python path and ffprobe/decode validation.
 - Persistence tests pass across a full restart.
 - No temporary skip, placeholder, or mock result is counted as production PASS.
 - Each failure report identifies case ID, source location, layer, failure class, evidence and remediation.
 
-**Important:** This is a coverage design and manifest, not a claim that the 87 cases have already been implemented or run. The existing QA-preload suite remains a separate isolated renderer suite.
+## 9. Execution wiring
 
-## Execution wiring (implementation in progress)
+The repository has these commands:
 
-The repository now has explicit commands:
+- `npm run test:qa:plan` — validate the 10-menu / 88-case inventory and mapping.
+- `npm run test:qa:menu-coverage` — run the new 88-ID renderer scenario suite and write `test-results/full-menu-qa/full-menu-qa-report.json` plus `test-results/full-menu-qa/full-menu-qa-report.md`.
+- `npm run test:qa:menu-legacy` — retain the previous narrower menu interaction regression.
 
-- `npm run test:qa:plan` validates the 10-menu / 88-case inventory.
-- `npm run test:qa:menu-coverage` runs the current isolated Playwright menu suite and writes:
-  - `test-results/full-menu-qa/full-menu-qa-report.json`
-  - `test-results/full-menu-qa/full-menu-qa-report.md`
+The custom reporter reads case IDs from Playwright test titles and reports PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED or NOT_IMPLEMENTED. Missing IDs, skipped cases and unmapped tests make the coverage command fail.
 
-The custom reporter reads case IDs from Playwright test titles (for example `[CL-01]`). It reports every planned scenario as PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED, or NOT_IMPLEMENTED. Missing case IDs fail the coverage command; skipped cases never count as PASS. The static inventory validator also checks that all 88 IDs appear in the functional suite.
+**Current implementation boundary:** all 88 IDs are mapped into the new suite, but those tests still launch `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Their results are isolated renderer/fixture evidence only. Some cases use deterministic bridge stubs or fixture FFmpeg. They do not prove production IPC, the real license gate, production persistence across restart, or the production Python/FFmpeg pipeline.
 
-**Current implementation boundary:** the new functional suite maps all 88 IDs and launches `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Its results are isolated renderer/fixture evidence only. Some checks invoke deterministic bridge stubs or the fixture FFmpeg helper. They do not prove production IPC, the real license gate, production persistence across restart, or the production Python/FFmpeg pipeline.
-
-**Not yet complete:** the grouped menu blocks need to be split into 88 independently reportable tests; scenarios that require real production side effects need production Electron launch with a dedicated valid QA license and isolated user-data directory; and production IPC/media/persistence suites must be added before the 88-case matrix can be considered release-complete. Do not add a license bypass to production code. The GitHub Actions workflow has been updated on this branch to run the new coverage suite and the legacy menu regression, but no workflow or test has been executed yet.
-
+**Execution status:** no test command or GitHub Actions workflow has been run in this implementation pass. The branch is wired to run the new coverage suite, the legacy menu regression and the inventory validator in CI when a workflow run is triggered.
