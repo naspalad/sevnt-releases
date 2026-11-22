@@ -120,7 +120,7 @@
         ],
         [
           "CP-02",
-          "Change trim start/end and enforce valid duration/bounds."
+          "Change manual clip segment start/end and enforce valid duration/bounds."
         ],
         [
           "CP-03",
