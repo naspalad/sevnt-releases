@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "title": "SEVNT Studio Full Menu QA Coverage Plan",
-  "status": "DESIGNED_NOT_EXECUTED",
+  "status": "RENDERER_SCENARIOS_IMPLEMENTED_NOT_EXECUTED",
   "branch": "qa/full-menu-coverage-design",
   "policy": {
     "noSilentSkips": true,
@@ -15,31 +15,37 @@
       "id": "static",
       "name": "Static implementation and selector inventory",
       "purpose": "Verify every planned control maps to an existing UI element, renderer handler, preload API and main-process IPC handler where applicable.",
-      "countsAsProductionPass": false
+      "countsAsProductionPass": false,
+      "implementationStatus": "INVENTORY_IMPLEMENTED_NOT_EXECUTED"
     },
     {
       "id": "renderer",
       "name": "Renderer interaction tests",
       "purpose": "Exercise visible controls, validation, navigation, empty/error states and state transitions in a real Electron window.",
-      "countsAsProductionPass": false
+      "countsAsProductionPass": false,
+      "implementationStatus": "IMPLEMENTED_NOT_EXECUTED",
+      "implementationFile": "tests/full-menu-functional.spec.js"
     },
     {
       "id": "ipc",
       "name": "Production IPC integration",
       "purpose": "Launch the packaged/development Electron app with the real preload and main process; verify actual IPC handlers and side effects.",
-      "countsAsProductionPass": true
+      "countsAsProductionPass": true,
+      "implementationStatus": "NOT_IMPLEMENTED"
     },
     {
       "id": "media",
       "name": "Real media pipeline and output validation",
       "purpose": "Run real FFmpeg/Python paths and inspect outputs with ffprobe plus decode/frame/audio checks.",
-      "countsAsProductionPass": true
+      "countsAsProductionPass": true,
+      "implementationStatus": "PARTIAL_EXISTING_STANDALONE_CHECKS_ONLY"
     },
     {
       "id": "persistence",
       "name": "Persistence and restart regression",
       "purpose": "Verify settings, history, assets and edits survive app restart where persistence is part of the feature.",
-      "countsAsProductionPass": true
+      "countsAsProductionPass": true,
+      "implementationStatus": "NOT_IMPLEMENTED"
     }
   ],
   "evidenceContract": [
@@ -479,5 +485,14 @@
     "Persistence cases pass across a full app restart.",
     "No TEMPORARY SKIP, placeholder assertion, or mock result is counted as production PASS.",
     "Failure report identifies exact case, source file/line, layer, failure class, evidence and remediation."
-  ]
+  ],
+  "implementation": {
+    "rendererMock": "IMPLEMENTED_NOT_EXECUTED",
+    "productionIpc": "NOT_IMPLEMENTED",
+    "productionMedia": "PARTIAL_EXISTING_STANDALONE_CHECKS_ONLY",
+    "restartPersistence": "NOT_IMPLEMENTED",
+    "testFile": "tests/full-menu-functional.spec.js",
+    "testCommand": "npm run test:qa:menu-coverage",
+    "scopeNote": "All 88 case IDs are mapped into ten menu-level Playwright tests. The current suite runs against qa-electron-main.cjs and qa-preload.cjs; this is isolated renderer/fixture coverage, not production integration evidence. Some case groups include prerequisite/contract checks where the QA harness cannot reproduce the production side effect."
+  }
 }
