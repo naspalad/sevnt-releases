@@ -1,6 +1,6 @@
 # SEVNT Studio — Full 10-Menu QA Plan
 
-**Status:** Designed; not executed.  
+**Status:** Renderer scenario suite implemented; not executed. Production IPC/persistence layers remain pending.  
 **Branch:** `qa/full-menu-coverage-design`  
 **Purpose:** Build an auditable test design for all ten menus without starting the test suite.
 
@@ -25,7 +25,7 @@
 
 ## 3. Menu-by-menu coverage
 
-The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defines **10 menus and 87 explicit cases**.
+The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defines **10 menus and 88 explicit cases**.
 
 ### M01 — Clips
 - Import local video and verify metadata.
@@ -135,11 +135,11 @@ The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defin
 - Handle unavailable links/media.
 - Verify Help does not disturb workspace or selected project.
 
-## 4. Coverage-manifest validator
+## 4. Implemented renderer suite\n\nThe 88 case IDs are mapped in `tests/full-menu-functional.spec.js` across ten menu-level Playwright test blocks. The tests launch the isolated QA Electron harness, use prepared video/transcript fixtures, and assert visible controls, state transitions, bridge calls and deterministic FFmpeg output where the fixture supports it. The History mock now seeds a disposable QA session so open/preview/delete flows can be exercised without touching user files.\n\nRun command (not yet executed): `npm run test:qa:menu-coverage`. The existing narrower regression file remains available through `npm run test:qa:menu-legacy`. The GitHub macOS workflow now runs both suites and uploads the coverage report.\n\n**Granularity note:** IDs are grouped by menu-level Playwright test blocks, not yet split into 88 independent Playwright test functions. A failure in a menu block can therefore mark several IDs failed together. The next refinement is to split each ID into its own test and attach per-case evidence/diagnostics.\n\n## 5. Coverage-manifest validator
 
 A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks that the ten required menus and all 88 unique case IDs remain present, that evidence fields are defined, and that production-proof/no-silent-skip policies cannot be accidentally removed. It does not launch the app or execute functional tests. Planned command: `node --test tests/full-menu-qa-plan.test.js`.
 
-## 5. Harness design
+## 6. Harness design
 
 - **Renderer suite:** Playwright against a real Electron window, deterministic media fixtures, controlled dialogs and isolated user-data directory.
 - **Production IPC suite:** launch the actual app entry point with the production preload; instrument IPC at the test boundary without replacing business handlers.
@@ -148,7 +148,7 @@ A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks t
 - **Safety:** provider, Telegram, license, update, cookies and destructive filesystem tests use dedicated test doubles/accounts/temp directories. No real customer credentials or production data.
 - **Artifacts:** Playwright trace, screenshot, console/main-process logs, output media, ffprobe JSON, case status and commit SHA.
 
-## 6. Execution order (not started)
+## 7. Execution order (not started)
 
 1. Complete the selector-to-handler-to-IPC inventory from the actual UI and source.
 2. Build reusable Electron fixtures and isolated user-data lifecycle.
@@ -158,9 +158,9 @@ A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks t
 6. Add the full suite to CI only after the harness is reviewed and locally validated.
 7. Run the full matrix on macOS ARM64 and x64; report every case, not only aggregate green/red.
 
-## 7. Release gates
+## 8. Release gates
 
-- All 87 cases have an explicit status; no case silently omitted.
+- All 88 cases have an explicit status; no case silently omitted.
 - Renderer interactions pass on supported macOS architectures.
 - Production IPC tests use the real preload and main process.
 - Media tests use real FFmpeg/Python and ffprobe validation.
@@ -179,9 +179,9 @@ The repository now has explicit commands:
   - `test-results/full-menu-qa/full-menu-qa-report.json`
   - `test-results/full-menu-qa/full-menu-qa-report.md`
 
-The custom reporter reads case IDs from Playwright test titles (for example `[CL-01]`). It reports every planned scenario as PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED, or NOT_IMPLEMENTED. Missing case IDs fail the coverage command; skipped cases never count as PASS. This prevents a green result when most of the 88 scenarios have not been implemented.
+The custom reporter reads case IDs from Playwright test titles (for example `[CL-01]`). It reports every planned scenario as PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED, or NOT_IMPLEMENTED. Missing case IDs fail the coverage command; skipped cases never count as PASS. The static inventory validator also checks that all 88 IDs appear in the functional suite.
 
-**Current implementation boundary:** only the explicitly tagged existing cases are counted. The current Playwright entry point still launches `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Its results are isolated renderer/fixture evidence only. They do not prove production IPC, the real license gate, production persistence, or the production Python/FFmpeg pipeline.
+**Current implementation boundary:** the new functional suite maps all 88 IDs and launches `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Its results are isolated renderer/fixture evidence only. Some checks invoke deterministic bridge stubs or the fixture FFmpeg helper. They do not prove production IPC, the real license gate, production persistence across restart, or the production Python/FFmpeg pipeline.
 
-**Not yet complete:** the remaining scenarios still need concrete Playwright actions/assertions, the production Electron launch path needs a dedicated valid QA license and isolated user-data directory, and production IPC/media/persistence suites must be added before the 88-case run can be considered complete. Do not add a license bypass to production code. The GitHub Actions workflow is intentionally not wired to this branch yet, so these commands are not automatically executed by the commits made during test design.
+**Not yet complete:** the grouped menu blocks need to be split into 88 independently reportable tests; scenarios that require real production side effects need production Electron launch with a dedicated valid QA license and isolated user-data directory; and production IPC/media/persistence suites must be added before the 88-case matrix can be considered release-complete. Do not add a license bypass to production code. The GitHub Actions workflow has been updated on this branch to run the new coverage suite and the legacy menu regression, but no workflow or test has been executed yet.
 
