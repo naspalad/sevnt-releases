@@ -92,8 +92,8 @@ async function runQaPipeline(payload = {}) {
   record('runPipeline', payload);
   const source = payload.source && fs.existsSync(payload.source) ? payload.source : qaVideo;
   const candidates = [
-    { candidateId: 'qa-clip-1', title: 'QA Highlight One', score: 9.4, category: 'highlight', start: 0, end: 4, dur: 4, srcVideo: source, state: 'rendering' },
-    { candidateId: 'qa-clip-2', title: 'QA Highlight Two', score: 8.7, category: 'highlight', start: 0, end: 4, dur: 4, srcVideo: source, state: 'rendering' },
+    { candidateId: 'qa-clip-1', title: 'QA Highlight One', score: 9.4, isHot: true, category: 'highlight', start: 0, end: 4, dur: 4, srcVideo: source, state: 'rendering' },
+    { candidateId: 'qa-clip-2', title: 'QA Highlight Two', score: 8.7, isHot: true, category: 'highlight', start: 0, end: 4, dur: 4, srcVideo: source, state: 'rendering' },
   ];
   emit('sourcePreview', { phase: 'local', srcVideo: source, file: source });
   emit('clipsDetected', candidates);
