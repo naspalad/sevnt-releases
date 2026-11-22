@@ -150,21 +150,20 @@ A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks t
 ## 6. Harness design and evidence limits
 
 - **Renderer suite (implemented, not executed):** Playwright against the isolated Electron QA harness with deterministic video/transcript fixtures and mock bridge responses.
-- **Production IPC suite (not implemented):** launch the actual app entry point with the production preload; instrument IPC at the test boundary without replacing business handlers.
-- **Media suite (partial existing checks):** the QA harness runs fixture FFmpeg and checks selected outputs; this is not yet the production Python/FFmpeg pipeline. Production exports still need ffprobe, frame and audio decode validation.
-- **Persistence suite (not implemented):** use a fresh user-data directory per test; write state, close Electron fully, relaunch, and verify settings, watermark and history survive restart.
-- **Safety:** provider, Telegram, license, update, cookies and destructive filesystem tests use dedicated test doubles/accounts/temp directories. No real customer credentials or production data.
-- **Artifacts:** Playwright trace, screenshot, console/main-process logs, output media, ffprobe JSON, case status and commit SHA.
+- **Production IPC suite (implemented, not executed):** tests launch the real package entry point (sevnt-main.js) and production src/preload.js, then invoke safe read-only handlers. QA mode is restricted to unpackaged runs and a temp-directory userData profile.
+- **Media suite (implemented, not executed; bounded coverage):** bundled FFmpeg/FFprobe perform real trim/crop, subtitle/overlay and split-screen encodes; outputs are probed and fully decoded. The real Python EngineSupervisor is also started and its bearer-token protection and S1 runtime capabilities are checked.
+- **Persistence suite (implemented, not executed):** settings are written through the production setSettings IPC handler, Electron is fully closed, and the same disposable profile is relaunched to verify the marker through getSettings.
+- **Important media boundary:** the running engine server currently exposes health/system/ASR only. The separate project/render API module is not mounted by server.py. Therefore editor/watermark/crop/split UI-to-production-render integration is still NOT COVERED; the media suite must not be represented as a full end-to-end pass for those effects.
+- **Safety:** provider, Telegram send, license activation, update installation, cookies and destructive filesystem tests are not executed. QA profile is temporary and isolated.
+- **Artifacts:** Playwright report/trace, screenshots, main-process logs, output media, ffprobe metadata, decode result and commit SHA.
 
 ## 7. Remaining implementation order
 
 1. Split the ten menu-level blocks into 88 independently reportable test cases.
-2. Add precise per-case assertions and evidence: action, expected state, actual state, screenshot/trace and failure classification.
-3. Build a production Electron launcher using `sevnt-main.js` and `src/preload.js`, isolated user data and a dedicated valid QA license. Do not bypass the production license gate.
-4. Add production IPC tests for every menu operation and verify the corresponding main-process side effect.
-5. Add production media tests for render, crop, split, editor, watermark, subtitles, audio and output safety using FFmpeg/Python plus ffprobe/decode checks.
-6. Add restart-persistence tests for Settings, Watermark, History and Editor state where persistence is part of the contract.
-7. Run the full matrix on macOS ARM64 and x64 after explicit authorization and report every case, not only aggregate green/red.
+2. Extend production IPC coverage from safe read-only calls to every menu operation and assert real Main Process side effects.
+3. Extend production media coverage to the actual legacy renderer-to-render path for Editor, Watermark, Crop and Split; the currently mounted Python engine API does not expose those render routes.
+4. Extend restart persistence coverage to Watermark assets, History records and Editor drafts where those features promise persistence.
+5. Run the full matrix on the target Windows environment and supported macOS ARM64/x64 after confirming platform runtimes; report each case and all blocked/not-covered states.
 
 ## 8. Release gates
 
@@ -183,9 +182,13 @@ The repository has these commands:
 - `npm run test:qa:plan` — validate the 10-menu / 88-case inventory and mapping.
 - `npm run test:qa:menu-coverage` — run the new 88-ID renderer scenario suite and write `test-results/full-menu-qa/full-menu-qa-report.json` plus `test-results/full-menu-qa/full-menu-qa-report.md`.
 - `npm run test:qa:menu-legacy` — retain the previous narrower menu interaction regression.
+- `npm run test:qa:production-ipc` — real Electron Main + production Preload IPC smoke tests.
+- `npm run test:qa:production-media` — real bundled FFmpeg/FFprobe transforms and authenticated Python Engine runtime smoke tests.
+- `npm run test:qa:production-persistence` — settings persistence across a complete Electron restart.
+- `npm run test:qa:production` — run all three production integration suites in sequence.
 
 The custom reporter reads case IDs from Playwright test titles and reports PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED or NOT_IMPLEMENTED. Missing IDs, skipped cases and unmapped tests make the coverage command fail.
 
-**Current implementation boundary:** all 88 IDs are mapped into the new suite, but those tests still launch `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Their results are isolated renderer/fixture evidence only. Some cases use deterministic bridge stubs or fixture FFmpeg. They do not prove production IPC, the real license gate, production persistence across restart, or the production Python/FFmpeg pipeline.
+**Current implementation boundary:** all 88 IDs are mapped into the renderer suite, which still uses the QA mock bridge. Separate production suites now exist for actual Electron IPC, real FFmpeg/FFprobe plus Python Engine smoke checks, and settings persistence across restart. These production suites are implemented but have not been executed. The media suite is not a full end-to-end proof of every legacy editor effect because the currently mounted engine API does not expose the project/render routes.
 
 **Execution status:** no test command or GitHub Actions workflow has been run in this implementation pass. The branch is wired to run the new coverage suite, the legacy menu regression and the inventory validator in CI when a workflow run is triggered.
