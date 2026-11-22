@@ -186,8 +186,12 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#galleryChips [data-filter="all"]').click();
     await expect(page.locator('.gtl-tile')).toHaveCount(2);
 
+    const beforeSelect = await page.evaluate(() => window.__sevntQaInspect?.());
+    expect(beforeSelect, 'QA renderer state before Select All').toMatchObject({ clipCount: 2, filter: 'all' });
     await page.locator('#selectModeBtn').click();
-    await page.locator('#selAllBtn').click({ force: true });
+    await expect.poll(() => page.evaluate(() => window.__sevntQaInspect?.().selectMode)).toBe(true);
+    await page.locator('#selAllBtn').click();
+    await expect.poll(() => page.evaluate(() => window.__sevntQaInspect?.().selected.length)).toBe(2);
     await expect(page.locator('#selCount')).toContainText('2');
     await expect(page.locator('#selRenderBtn')).toBeEnabled();
     await page.locator('#selClearBtn').click();
