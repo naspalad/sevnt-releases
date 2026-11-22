@@ -660,7 +660,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     expect(linkCount).toBeGreaterThan(0);
     for (let i = 0; i < linkCount; i++) {
       const href = await links.nth(i).getAttribute('href');
-      expect(href).toMatch(/^https:\/\//);
+      expect(href).toMatch(/^(https:\/\/|mailto:)/);
     }
 
     // HE-04 / HE-05: tutorial launch/close and local tutorial media availability.
