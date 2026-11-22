@@ -164,9 +164,15 @@ jobs:
           PACKAGED_STARTUP: ${{ steps.packaged_startup.outcome }}
         run: |
           failed=0
-          for name in NAVIGATION_CONTRACT RUNTIME_UI MENU_INTERACTIONS WATERMARK_CONTRACT FFMPEG_RUNTIME PYTHON_RUNTIME PACKAGED_STARTUP; do
-            value="$(eval echo \\\$name)"
-            echo "$name: $value"
+          for value in \
+            "${NAVIGATION_CONTRACT}" \
+            "${RUNTIME_UI}" \
+            "${MENU_INTERACTIONS}" \
+            "${WATERMARK_CONTRACT}" \
+            "${FFMPEG_RUNTIME}" \
+            "${PYTHON_RUNTIME}" \
+            "${PACKAGED_STARTUP}"; do
+            echo "$value"
             if [ "$value" != "success" ]; then failed=1; fi
           done
           exit "$failed"
