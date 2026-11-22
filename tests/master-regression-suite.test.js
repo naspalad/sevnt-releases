@@ -7,7 +7,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const ROOT = path.resolve(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const menuTest = read('tests/mac-menu-interactions.spec.js');
+const menuTest = read('tests/mac-menu-interactions.spec.js') + '\\n' + read('tests/full-menu-functional.spec.js');
 const runtimeTest = read('tests/mac-runtime-ui.spec.js');
 const preload = read('src/preload.js');
 const renderer = read('src/renderer.js');
@@ -36,6 +36,16 @@ test('Master Regression: current UI test evidence exists for each menu',()=>{
 });
 test('Master Regression: production preload bridge declarations are discoverable',()=>{
  for(const item of checks){const source=preload;const missing=item.productionBridge.filter(p=>!p.test(source)).map(String);record(item.label+': production bridge',missing.length?'NOT_TESTED':'PARTIAL',missing.length?'Missing: '+missing.join(', '):'Preload bridge declaration found; main-process handler mapping is not statically proven because src/main.js is obfuscated.');assert.deepEqual(missing,[],item.label+' production bridge evidence missing');}
+});
+test('Master Regression: all 88 full-menu case IDs have functional-suite mappings',()=>{
+ const spec=read('tests/full-menu-functional.spec.js');
+ const plan=JSON.parse(read('tests/full-menu-qa-plan.json'));
+ const mapped=new Set();
+ for(const match of spec.matchAll(/test\\('\[([^\\]]+)\\]/g)) for(const id of match[1].split(',').map(value=>value.trim())) mapped.add(id);
+ const planned=plan.menus.flatMap(menu=>menu.cases.map(([id])=>id));
+ assert.equal(mapped.size,88);
+ for(const id of planned) assert.ok(mapped.has(id),'Missing full-menu test mapping: '+id);
+ record('Full menu scenario mapping','PASS','All 88 IDs map to tests/full-menu-functional.spec.js; renderer evidence remains mock-backed.');
 });
 test('Master Regression: mock-backed tests are never classified as production integration PASS',()=>{
  const qa=read('tests/qa-preload.cjs');assert.match(qa,/runQaPipeline/);assert.match(qa,/renderFixture/);assert.match(qa,/testProvider:\s*asyncResult\('testProvider',\s*\{\s*ok:\s*true\s*\}\)/);record('Production integration classification','PASS','QA preload uses deterministic fixtures/stubs; production integration remains unproven.');
