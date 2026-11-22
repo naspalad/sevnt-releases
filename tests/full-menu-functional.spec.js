@@ -319,6 +319,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#wmLines .wm-line-text').nth(1).fill('@SEVNT');
     await page.locator('#wmLines .wm-line [data-act="down"]').first().click();
     await page.locator('#wmLines .wm-line [data-act="del"]').last().click();
+    await expect.poll(() => page.locator('.wm-badge').count(), { timeout: 15000 }).toBeGreaterThan(0);
 
     // WM-09: per-clip override badge toggles OFF and returns to project default on the next click.
     const wmBadge = page.locator('.wm-badge').first();
@@ -347,6 +348,10 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
 
   // M05 — Crop Studio: CR-01..CR-09
   test('[CR-01, CR-02, CR-03, CR-04, CR-05, CR-06, CR-07, CR-08, CR-09] Crop Studio — open/gating, aspect, position, zoom, keyframes, history, apply scope, preview and render', async () => {
+    // Reload to guarantee the no-selected-clip gate is tested from a clean renderer state.
+    await page.reload();
+    await page.waitForLoadState('domcontentloaded');
+    await expect(page.locator('#clipsPage')).toBeVisible();
     await openPanel('crop');
     await expect(page.locator('#openCropStudioBtn')).toBeDisabled();
     await expect(page.locator('#openGamingSplitStudioBtn')).toBeDisabled();
