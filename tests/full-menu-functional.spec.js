@@ -106,13 +106,19 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // CL-05: verify the fixture state that the production gallery filters consume
     // before testing the controls. This prevents a fixture/event-contract failure
     // from being misreported as a broken gallery filter.
-    await expect.poll(
-      async () => {
-        const snapshot = await page.evaluate(() => window.__sevntQaInspect());
-        return snapshot.clips.length === 2 && snapshot.clips.every(clip => clip.finalRendered);
-      },
-      { timeout: 90000, message: 'Wait for both asynchronous FFmpeg fixture renders to finish before checking the Rendered filter' }
-    ).toBe(true);
+    try {
+      await expect.poll(
+        async () => {
+          const snapshot = await page.evaluate(() => window.__sevntQaInspect());
+          return snapshot.clips.length === 2 && snapshot.clips.every(clip => clip.finalRendered);
+        },
+        { timeout: 90000, message: 'Wait for both asynchronous FFmpeg fixture renders to finish before checking the Rendered filter' }
+      ).toBe(true);
+    } catch (error) {
+      const diagnostics = await page.evaluate(() => window.qaBridge.getPipelineDiagnostics());
+      const snapshot = await page.evaluate(() => window.__sevntQaInspect());
+      throw new Error('QA pipeline did not complete both final clips. Diagnostics: ' + JSON.stringify(diagnostics) + '. Renderer state: ' + JSON.stringify(snapshot) + '. Original: ' + (error?.message || error));
+    }
 
     const galleryState = await page.evaluate(() => window.__sevntQaInspect());
     expect(galleryState.clipCount, 'pipeline must publish both completed fixture clips').toBe(2);
