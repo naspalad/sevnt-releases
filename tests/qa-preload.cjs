@@ -118,6 +118,10 @@ async function runQaPipeline(payload = {}) {
         { text: 'QA', start: 0.9, end: 1.4 },
         { text: 'highlight', start: 1.5, end: 2.2 },
       ],
+      // The fixture has a real FFmpeg output file and represents a completed,
+      // final render (not a fast-mode preview). The gallery's Rendered filter
+      // uses isFinalRendered(file && !previewOnly), so make that state explicit.
+      previewOnly: false,
       subsBurned: false,
       titlesBurned: false,
       isHot: true,
