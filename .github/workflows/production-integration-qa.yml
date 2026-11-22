@@ -60,6 +60,19 @@ jobs:
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
 
+      # The renderer QA harness uses real FFmpeg fixtures. Export the Homebrew
+      # binaries before running the menu suite (not only before production-media).
+      - name: Configure FFmpeg for all QA tests
+        run: |
+          FFMPEG_BIN="$(command -v ffmpeg)"
+          FFPROBE_BIN="$(command -v ffprobe)"
+          test -x "$FFMPEG_BIN"
+          test -x "$FFPROBE_BIN"
+          echo "SEVNT_QA_FFMPEG_BIN=$FFMPEG_BIN" >> "$GITHUB_ENV"
+          echo "SEVNT_QA_FFPROBE_BIN=$FFPROBE_BIN" >> "$GITHUB_ENV"
+          echo "Configured FFmpeg: $FFMPEG_BIN"
+          echo "Configured FFprobe: $FFPROBE_BIN"
+
       - name: Verify runner and Electron target architecture
         run: |
           echo "Runner architecture: $(uname -m)"
@@ -91,8 +104,6 @@ jobs:
       - name: Run production FFmpeg, FFprobe and Python Engine integration
         run: |
           echo "SEVNT_ENGINE_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
-          echo "SEVNT_QA_FFMPEG_BIN=$(command -v ffmpeg)" >> "$GITHUB_ENV"
-          echo "SEVNT_QA_FFPROBE_BIN=$(command -v ffprobe)" >> "$GITHUB_ENV"
           npm run test:qa:production-media
 
       - name: Run persistence across full Electron restart
