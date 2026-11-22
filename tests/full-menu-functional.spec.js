@@ -292,8 +292,11 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
 
     // WM-01: valid image accepted; invalid MIME/extension should not become an active image.
     const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/pXcAAAAASUVORK5CYII=', 'base64');
+    await page.locator('#wm_file').setInputFiles({ name: 'qa-watermark.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') });
+    await expect.poll(() => count('watermark.saveAsset'), { timeout: 15000 }).toBe(1);
+    await expect(page.locator('#wm_enabled')).not.toBeChecked();
     await page.locator('#wm_file').setInputFiles({ name: 'qa-watermark.png', mimeType: 'image/png', buffer: png });
-    await expect.poll(() => count('watermark.saveAsset'), { timeout: 20000 }).toBeGreaterThan(0);
+    await expect.poll(() => count('watermark.saveAsset'), { timeout: 20000 }).toBe(2);
     await expect(page.locator('#wm_enabled')).toBeChecked();
 
     // WM-02 / WM-03: toggle and exercise all nine anchor cells.
