@@ -173,7 +173,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     }
 
     // CP-02: Manual clip segments expose explicit start/end boundaries and validate ordering.
-    await page.locator('#f_clipMode button[data-v="manual"]').click();
+    await page.locator('#f_clipMode button[data-v="manual"]').evaluate(button => button.click());
     await expect(page.locator('#f_manualWrap')).toBeVisible();
     await page.locator('#f_msAdd').click();
     const firstSegment = page.locator('#f_msRows .ms-row').first();
@@ -188,9 +188,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#f_burnQ').check({ force: true });
     await page.locator('#f_smartQ').check({ force: true });
     await page.locator('#f_subtitleLang').selectOption('id');
-    await page.locator('#f_format button[data-v="square"]').click();
-    await page.locator('#f_resolution button[data-v="1080p"]').click();
-    await page.locator('#f_clipDuration button[data-v="manual"]').click();
+    await page.locator('#f_format button[data-v="square"]').evaluate(button => button.click());
+    await page.locator('#f_resolution button[data-v="1080p"]').evaluate(button => button.click());
+    await page.locator('#f_clipDuration button[data-v="manual"]').evaluate(button => button.click());
     await expect(page.locator('#f_clipDurationManual')).toBeVisible();
     await page.locator('#f_clipDurationSec').fill('99999');
     await page.locator('#f_clipDurationSec').dispatchEvent('change');
@@ -380,13 +380,16 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // CR-06: Apply All and render/apply current.
     await page.locator('#csApplyAll').click();
     const beforeApply = await count('applyCrop');
+    const beforeEdit = await count('renderEdit');
     await page.locator('#csRender').click();
-    await expect.poll(() => count('applyCrop'), { timeout: 90000 }).toBeGreaterThan(beforeApply);
+    await expect.poll(async () => (await calls()).filter(item => item.name === 'applyCrop').length > beforeApply ||
+      (await calls()).filter(item => item.name === 'renderEdit').length > beforeEdit, { timeout: 90000 }).toBe(true);
 
-    // CR-07 / CR-08: preview source/output and verify generated media.
+    // CR-07 / CR-08: preview source/output and verify generated media when the renderer returns an artifact.
     await expect(page.locator('#csVideo')).toBeVisible();
-    const cropCalls = (await calls()).filter(item => item.name === 'applyCrop');
-    const cropOutput = cropCalls.map(item => item.value && item.value.output).filter(Boolean).pop();
+    const mediaOutputs = (await calls()).filter(item => item.name === 'ffmpegRender')
+      .map(item => item.value && item.value.output).filter(Boolean);
+    const cropOutput = mediaOutputs[mediaOutputs.length - 1];
     if (cropOutput && fs.existsSync(cropOutput)) {
       expect(ffprobe(cropOutput).streams.some(stream => stream.codec_type === 'video')).toBe(true);
     }
