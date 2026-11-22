@@ -228,6 +228,15 @@ jobs:
             hasil-test-macos-*.png
             test-results/
 
+      - name: Upload Full Menu QA Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SEVNT-Full-Menu-QA-Report-${{ matrix.arch }}
+          path: |
+            test-results/full-menu-qa/
+          if-no-files-found: warn
+
       - name: Upload macOS installer
         uses: actions/upload-artifact@v4
         with:
