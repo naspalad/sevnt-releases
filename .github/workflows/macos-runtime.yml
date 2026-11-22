@@ -157,6 +157,16 @@ jobs:
         continue-on-error: true
         run: node --test tests/master-regression-suite.test.js
 
+      - name: Validate Full Menu QA Scenario Inventory
+        id: full_menu_inventory
+        continue-on-error: true
+        run: npm run test:qa:plan
+
+      - name: Enforce Full Menu QA Scenario Coverage
+        id: full_menu_coverage
+        continue-on-error: true
+        run: npm run test:qa:menu-coverage
+
       - name: Aggregate independent test results
         if: always()
         env:
@@ -168,6 +178,8 @@ jobs:
           PYTHON_RUNTIME: ${{ steps.python_runtime.outcome }}
           PACKAGED_STARTUP: ${{ steps.packaged_startup.outcome }}
           MASTER_REGRESSION: ${{ steps.master_regression.outcome }}
+          FULL_MENU_INVENTORY: ${{ steps.full_menu_inventory.outcome }}
+          FULL_MENU_COVERAGE: ${{ steps.full_menu_coverage.outcome }}
         run: |
           failed=0
           for value in \
@@ -178,7 +190,9 @@ jobs:
             "${FFMPEG_RUNTIME}" \
             "${PYTHON_RUNTIME}" \
             "${PACKAGED_STARTUP}" \
-            "${MASTER_REGRESSION}"; do
+            "${MASTER_REGRESSION}" \
+            "${FULL_MENU_INVENTORY}" \
+            "${FULL_MENU_COVERAGE}"; do
             echo "$value"
             if [ "$value" != "success" ]; then failed=1; fi
           done
