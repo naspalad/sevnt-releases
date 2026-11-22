@@ -32,7 +32,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('.gtl-tile')).toHaveCount(2, { timeout: 60000 });
   }
 
-  test('Clips imports the prepared video and attaches/clears a transcript', async () => {
+  test('[CL-01,CL-03] Clips imports the prepared video and attaches/clears a transcript', async () => {
     await expect(page.locator('#urlInput')).toBeVisible();
     await expect(page.locator('#pickVideo')).toBeAttached();
     await expect(page.locator('#im_attach')).toBeAttached();
@@ -57,7 +57,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     // real render coverage are deliberately not asserted by this import test.
   });
 
-  test('Clip Settings controls accept changes and expose the configuration groups', async () => {
+  test('[CP-01] Clip Settings controls accept changes and expose the configuration groups', async () => {
     await page.locator('.rail-btn[data-panel="clip"]').click();
     await expect(page.locator('#panelTitle')).toContainText(/clip/i);
     await expect(page.locator('#f_fastQ')).toBeAttached();
@@ -72,7 +72,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#f_subtitleLang')).toHaveValue('id');
   });
 
-  test('Watermark controls update anchor, geometry and text rows', async () => {
+  test('[WM-02,WM-03,WM-04] Watermark controls update anchor, geometry and text rows', async () => {
     await page.locator('.rail-btn[data-panel="watermark"]').click();
     await expect(page.locator('#wmAnchorGrid')).toBeVisible();
     await expect(page.locator('#wm_file')).toBeAttached();
@@ -106,7 +106,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect.poll(async () => (await calls()).some(x => x.name === 'setSettings')).toBe(true);
   });
 
-  test('Crop panel exposes both editing modes and correctly gates them without a selected clip', async () => {
+  test('[CR-09] Crop panel exposes both editing modes and correctly gates them without a selected clip', async () => {
     await page.locator('.rail-btn[data-panel="crop"]').click();
     await expect(page.locator('#openCropStudioBtn')).toBeAttached();
     await expect(page.locator('#openGamingSplitStudioBtn')).toBeAttached();
@@ -116,7 +116,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#openGamingSplitStudioBtn')).toBeDisabled();
   });
 
-  test('History controls load, search and request a new session', async () => {
+  test('[HI-01,HI-02,HI-03] History controls load, search and request a new session', async () => {
     await page.locator('.rail-btn[data-panel="history"]').click();
     await expect(page.locator('#historyPage')).toBeVisible();
     await expect(page.locator('#hpSearch')).toBeVisible();
@@ -127,7 +127,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#clipsPage')).toBeVisible();
   });
 
-  test('Settings exercise all provider key lifecycles, models, ASR, save and license controls', async () => {
+  test('[ST-02,ST-03,ST-04] Settings exercise all provider key lifecycles, models, ASR, save and license controls', async () => {
     await page.locator('.rail-btn[data-panel="settings"]').click();
     await expect(page.locator('#settingsView')).toBeVisible();
     const providers = ['gemini', 'groq', 'openai', 'openrouter', 'anthropic', 'sumopod'];
@@ -160,7 +160,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     // License activation is intentionally not attempted by this suite.
   });
 
-  test('Help, theme and Output controls remain reachable', async () => {
+  test('[HE-01] Help, theme and Output controls remain reachable', async () => {
     await page.locator('#helpBtn').click();
     await expect(page.locator('#helpView')).toBeVisible();
     await page.locator('#railClipsBtn').click();
@@ -169,7 +169,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect.poll(async () => (await calls()).some(x => x.name === 'openOutput')).toBe(true);
   });
 
-  test('Clips runs deterministic highlights, filters, selection, preview and real FFmpeg batch render', async () => {
+  test('[CL-04,CL-05,CL-06,CL-07,CL-08] Clips runs deterministic highlights, filters, selection, preview and real FFmpeg batch render', async () => {
     await page.locator('#pickVideo').click();
     await expect(page.locator('#im_file')).toContainText('qa-source.mp4');
     await page.locator('#runPipeline').click();
@@ -255,7 +255,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
   });
 
 
-  test('Editor edits caption style, titles and manual captions and renders the changes', async () => {
+  test('[ED-01,ED-03,ED-04] Editor edits caption style, titles and manual captions and renders the changes', async () => {
     await seedQaClips();
     await page.locator('#openEditorBtn').click();
     await expect(page.locator('#captionStudio')).toBeVisible();
@@ -292,7 +292,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#captionStudio')).toBeHidden();
   });
 
-  test('Crop Studio changes aspect, zoom, keyframes and applies crop to the clip', async () => {
+  test('[CR-01,CR-02,CR-03,CR-04,CR-05,CR-06] Crop Studio changes aspect, zoom, keyframes and applies crop to the clip', async () => {
     await seedQaClips();
     await page.locator('.rail-btn[data-panel="crop"]').click();
     await page.locator('#openCropStudioBtn').click();
@@ -330,7 +330,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     }, { timeout: 60000 }).toBe(true);
   });
 
-  test('Split Studio handles two sources, mute, swap, ratio, keyframes and apply', async () => {
+  test('[SP-01,SP-02,SP-03,SP-04,SP-05,SP-06,SP-07,SP-09] Split Studio handles two sources, mute, swap, ratio, keyframes and apply', async () => {
     await seedQaClips();
     await page.locator('.rail-btn[data-panel="crop"]').click();
     await page.locator('#openGamingSplitStudioBtn').click();
