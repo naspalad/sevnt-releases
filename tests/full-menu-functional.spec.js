@@ -103,12 +103,26 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('.gtl-tile').last()).toContainText('QA Highlight Two');
     expect(await count('runPipeline')).toBe(1);
 
-    // CL-05: gallery filters must return the expected fixture candidates.
-    // Both fixture clips are hot and have completed final FFmpeg outputs.
-    const expectedByFilter = { hot: 2, saved: 2, all: 2 };
-    for (const filter of ['hot', 'saved', 'all']) {
+    // CL-05: verify the fixture state that the production gallery filters consume
+    // before testing the controls. This prevents a fixture/event-contract failure
+    // from being misreported as a broken gallery filter.
+    const galleryState = await page.evaluate(() => window.__sevntQaInspect());
+    expect(galleryState.clipCount, 'pipeline must publish both completed fixture clips').toBe(2);
+    expect(galleryState.clips.map(clip => clip.isHot), 'both fixture candidates must be explicitly hot').toEqual([true, true]);
+    expect(galleryState.clips.map(clip => clip.finalRendered), 'both fixture clips must have final FFmpeg outputs').toEqual([true, true]);
+
+    const expectedByFilter = [
+      ['hot', 2],
+      ['saved', 2],
+      ['all', 2],
+    ];
+    for (const [filter, expectedCount] of expectedByFilter) {
       await page.locator('#galleryChips [data-filter="' + filter + '"]').click();
-      await expect(page.locator('.gtl-tile')).toHaveCount(expectedByFilter[filter]);
+      await expect(page.locator('#galleryChips [data-filter="' + filter + '"]')).toHaveClass(/active/);
+      await expect.poll(
+        async () => page.locator('.gtl-tile').count(),
+        { message: 'Gallery filter "' + filter + '" should show ' + expectedCount + ' clips; renderer state: ' + JSON.stringify(await page.evaluate(() => window.__sevntQaInspect())) }
+      ).toBe(expectedCount);
       await expect(page.locator('.gtl-tile').first()).toBeVisible();
     }
 
