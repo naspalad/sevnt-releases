@@ -436,27 +436,43 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#hpRefresh').click();
     expect(await count('listHistory')).toBeGreaterThan(0);
 
-    // HI-04..HI-07 depend on a populated report; the fixture provider exposes a deterministic
-    // report when available. Empty-state remains an explicit valid behavior when no session exists.
+    // HI-04 / HI-05: open the seeded QA session, inspect the clip and play its preview.
     const rows = page.locator('#hpList .pj-row');
-    if (await rows.count()) {
-      await rows.first().locator('[data-act="open"]').click();
-      await expect(page.locator('#hpPanel')).toBeVisible();
-      await page.locator('#hpPanel [data-act="folder"]').click();
-      await page.locator('#hpPanel [data-act="call"]').click();
-      await expect(page.locator('#hpPanel [data-act="cdel"]').or(page.locator('#hpPanel [data-act="cclear"]')).first()).toBeVisible();
-      await page.locator('#hpPanel [data-act="cclear"]').click();
-      await page.locator('#hpPanel [data-act="pclose"]').click();
-    }
+    await expect(rows).toHaveCount(1);
+    await rows.first().locator('[data-act="open"]').click();
+    await expect(page.locator('#hpPanel')).toBeVisible();
+    await expect(page.locator('#hpPanel .pj-clip-card')).toHaveCount(1);
+    await page.locator('#hpPanel [data-act="folder"]').click();
+    await expect.poll(() => count('openOutput')).toBeGreaterThan(0);
+    await page.locator('#hpPanel [data-act="play"]').click();
+    await expect(page.locator('.hp-player')).toBeVisible();
+    await page.locator('.hp-player .hp-icon').click();
+    await expect(page.locator('.hp-player')).toHaveCount(0);
 
-    // HI-08: verify the UI can leave/re-enter History without losing the page contract.
+    // HI-06: select and delete the clip; confirm only the isolated QA fixture path is affected.
+    await page.locator('#hpPanel .pj-clip-card').click();
+    await page.locator('#hpPanel [data-act="cdel"]').click();
+    await expect(page.locator('.choice-dlg')).toBeVisible();
+    await page.locator('.choice-dlg button[data-i="0"]').click();
+    await expect.poll(() => count('history.trashClips')).toBeGreaterThan(0);
+
+    // HI-07: delete the seeded QA session through the confirmation dialog.
+    await expect(page.locator('#hpList .pj-row')).toHaveCount(1);
+    await page.locator('#hpList .pj-row [data-act="bdel"]').click();
+    await expect(page.locator('.choice-dlg')).toBeVisible();
+    await page.locator('.choice-dlg button[data-i="0"]').click();
+    await expect.poll(() => count('history.trashSession')).toBeGreaterThan(0);
+
+    // HI-08: leave/re-enter History; the fixture provider reloads a deterministic test session.
     await openPanel('clip');
     await openPanel('history');
     await expect(page.locator('#historyPage')).toBeVisible();
+    await expect(page.locator('#hpList .pj-row')).toHaveCount(1);
 
-    // HI-09: missing report/media must not crash the history view.
-    expect(await page.locator('#historyPage').isVisible()).toBe(true);
-    expect(await page.locator('#hpSub').textContent()).toBeTruthy();
+    // HI-09: missing report/media must not crash the history view; empty filter remains recoverable.
+    await page.locator('#hpSearch').fill('no-such-qa-session');
+    await expect(page.locator('#hpList')).toContainText(/tidak ada batch yang cocok/i);
+    await page.locator('#hpSearch').fill('');
   });
 
   // M08 — Settings: ST-01..ST-12
