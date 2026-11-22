@@ -9,13 +9,16 @@ const path = require('node:path');
 
 const planPath = path.join(__dirname, 'full-menu-qa-plan.json');
 const plan = JSON.parse(fs.readFileSync(planPath, 'utf8'));
+const functionalSpec = fs.readFileSync(path.join(__dirname, 'full-menu-functional.spec.js'), 'utf8');
 const expectedMenus = [
   'Clips', 'Clip', 'Editor', 'Watermark', 'Crop Studio',
   'Split Studio', 'History', 'Settings', 'Output', 'Help',
 ];
 
 test('Full Menu QA plan: exactly ten required menus are present', () => {
-  assert.equal(plan.status, 'DESIGNED_NOT_EXECUTED');
+  assert.equal(plan.status, 'RENDERER_SCENARIOS_IMPLEMENTED_NOT_EXECUTED');
+  assert.equal(plan.implementation.rendererMock, 'IMPLEMENTED_NOT_EXECUTED');
+  assert.equal(plan.implementation.productionIpc, 'NOT_IMPLEMENTED');
   assert.equal(plan.menus.length, 10);
   assert.deepEqual(plan.menus.map(menu => menu.name), expectedMenus);
 });
@@ -49,6 +52,18 @@ test('Full Menu QA plan: each menu has multiple cases and all required evidence 
   ]) {
     assert.ok(plan.evidenceContract.includes(field), 'Missing evidence field: ' + field);
   }
+});
+
+
+test('Full Menu QA plan: all 88 scenario IDs are mapped to Playwright tests', () => {
+  const mapped = new Set();
+  for (const match of functionalSpec.matchAll(/test\\('\[([^\\]]+)\\]/g)) {
+    for (const id of match[1].split(',').map(value => value.trim())) mapped.add(id);
+  }
+  const planned = plan.menus.flatMap(menu => menu.cases.map(([id]) => id));
+  assert.equal(mapped.size, 88, 'Functional Playwright suite must map 88 unique scenario IDs');
+  for (const id of planned) assert.ok(mapped.has(id), 'Missing Playwright implementation for ' + id);
+  for (const id of mapped) assert.ok(planned.includes(id), 'Unknown Playwright case ID ' + id);
 });
 
 test('Full Menu QA plan: production proof and no-silent-skip policies are mandatory', () => {
