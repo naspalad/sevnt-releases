@@ -114,29 +114,62 @@ jobs:
           node -e "const fs=require('fs'); const p='tests/fixtures/qa-source.mp4'; const s=fs.statSync(p); const d=Number(fs.readFileSync('/tmp/sevnt-qa-duration.txt','utf8').trim()); if(s.size<10000) throw Error('Prepared QA video is unexpectedly small'); if(!Number.isFinite(d)||d<=0) throw Error('Prepared QA video duration is invalid'); console.log('Using prepared QA fixture:',p,s.size,'bytes;',d,'seconds');"
 
       - name: Verify navigation contract
+        id: navigation_contract
+        continue-on-error: true
         run: node --test tests/mac-navigation-contract.test.js
 
       - name: Test isolated SEVNT dashboard runtime
+        id: runtime_ui
+        continue-on-error: true
         run: npx playwright test tests/mac-runtime-ui.spec.js --workers=1
 
       - name: Test SEVNT menu interactions
+        id: menu_interactions
+        continue-on-error: true
         run: npx playwright test tests/mac-menu-interactions.spec.js --workers=1
 
       - name: Test watermark state and override contracts
+        id: watermark_contract
+        continue-on-error: true
         run: node --test tests/mac-watermark-contract.test.js
 
       - name: Test native FFmpeg render output
+        id: ffmpeg_runtime
+        continue-on-error: true
         run: npx playwright test tests/mac-ffmpeg-runtime.spec.js --workers=1
 
       - name: Test bundled Python engine runtime
+        id: python_runtime
+        continue-on-error: true
         env:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
         run: node --test tests/mac-engine-runtime.test.js
 
       - name: Test packaged macOS app startup
+        id: packaged_startup
+        continue-on-error: true
         env:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
         run: npx playwright test tests/mac-test.spec.js --workers=1
+
+      - name: Aggregate independent test results
+        if: always()
+        env:
+          NAVIGATION_CONTRACT: ${{ steps.navigation_contract.outcome }}
+          RUNTIME_UI: ${{ steps.runtime_ui.outcome }}
+          MENU_INTERACTIONS: ${{ steps.menu_interactions.outcome }}
+          WATERMARK_CONTRACT: ${{ steps.watermark_contract.outcome }}
+          FFMPEG_RUNTIME: ${{ steps.ffmpeg_runtime.outcome }}
+          PYTHON_RUNTIME: ${{ steps.python_runtime.outcome }}
+          PACKAGED_STARTUP: ${{ steps.packaged_startup.outcome }}
+        run: |
+          failed=0
+          for name in NAVIGATION_CONTRACT RUNTIME_UI MENU_INTERACTIONS WATERMARK_CONTRACT FFMPEG_RUNTIME PYTHON_RUNTIME PACKAGED_STARTUP; do
+            value="$(eval echo \\\$name)"
+            echo "$name: $value"
+            if [ "$value" != "success" ]; then failed=1; fi
+          done
+          exit "$failed"
 
       - name: Collect SEVNT Startup Trace
         if: always()
