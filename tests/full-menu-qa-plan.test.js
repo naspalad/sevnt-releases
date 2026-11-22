@@ -36,9 +36,10 @@ test('Full Menu QA plan: every case has a unique ID and actionable description',
 });
 
 test('Full Menu QA plan: each menu has multiple cases and all required evidence fields', () => {
-  for (const menu of plan.menus) {
+  const expectedPrefixes = ['CL', 'CP', 'ED', 'WM', 'CR', 'SP', 'HI', 'ST', 'OU', 'HE'];
+  for (const [index, menu] of plan.menus.entries()) {
     assert.ok(menu.cases.length >= 5, menu.name + ' has insufficient planned coverage');
-    for (const [id] of menu.cases) assert.ok(id.startsWith(menu.id.slice(1, 2)) || id.length >= 5);
+    for (const [id] of menu.cases) assert.ok(id.startsWith(expectedPrefixes[index] + '-'), id + ' does not belong to ' + menu.name);
   }
 
   for (const field of [
