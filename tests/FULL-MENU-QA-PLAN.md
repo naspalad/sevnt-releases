@@ -135,7 +135,11 @@ The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defin
 - Handle unavailable links/media.
 - Verify Help does not disturb workspace or selected project.
 
-## 4. Harness design
+## 4. Coverage-manifest validator
+
+A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks that the ten required menus and all 88 unique case IDs remain present, that evidence fields are defined, and that production-proof/no-silent-skip policies cannot be accidentally removed. It does not launch the app or execute functional tests. Planned command: `node --test tests/full-menu-qa-plan.test.js`.
+
+## 5. Harness design
 
 - **Renderer suite:** Playwright against a real Electron window, deterministic media fixtures, controlled dialogs and isolated user-data directory.
 - **Production IPC suite:** launch the actual app entry point with the production preload; instrument IPC at the test boundary without replacing business handlers.
@@ -144,7 +148,7 @@ The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defin
 - **Safety:** provider, Telegram, license, update, cookies and destructive filesystem tests use dedicated test doubles/accounts/temp directories. No real customer credentials or production data.
 - **Artifacts:** Playwright trace, screenshot, console/main-process logs, output media, ffprobe JSON, case status and commit SHA.
 
-## 5. Execution order (not started)
+## 6. Execution order (not started)
 
 1. Complete the selector-to-handler-to-IPC inventory from the actual UI and source.
 2. Build reusable Electron fixtures and isolated user-data lifecycle.
@@ -154,7 +158,7 @@ The machine-readable source of truth is `tests/full-menu-qa-plan.json`. It defin
 6. Add the full suite to CI only after the harness is reviewed and locally validated.
 7. Run the full matrix on macOS ARM64 and x64; report every case, not only aggregate green/red.
 
-## 6. Release gates
+## 7. Release gates
 
 - All 87 cases have an explicit status; no case silently omitted.
 - Renderer interactions pass on supported macOS architectures.
