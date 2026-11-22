@@ -41,7 +41,11 @@ test('Master Regression: all 88 full-menu case IDs have functional-suite mapping
  const spec=read('tests/full-menu-functional.spec.js');
  const plan=JSON.parse(read('tests/full-menu-qa-plan.json'));
  const mapped=new Set();
- for(const match of spec.matchAll(/test\\('\[([^\\]]+)\\]/g)) for(const id of match[1].split(',').map(value=>value.trim())) mapped.add(id);
+ for(const line of spec.split('\n')){
+  const marker="test('[",start=line.indexOf(marker);if(start<0)continue;
+  const end=line.indexOf(']',start+marker.length);if(end<0)continue;
+  for(const id of line.slice(start+marker.length,end).split(',').map(value=>value.trim()))mapped.add(id);
+ }
  const planned=plan.menus.flatMap(menu=>menu.cases.map(([id])=>id));
  assert.equal(mapped.size,88);
  for(const id of planned) assert.ok(mapped.has(id),'Missing full-menu test mapping: '+id);
