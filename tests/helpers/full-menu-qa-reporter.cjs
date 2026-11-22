@@ -17,7 +17,7 @@ class FullMenuQaReporter {
 
   onTestEnd(test, result) {
     const title = test.titlePath().join(' ');
-    const matches = [...title.matchAll(/\\[((?:[A-Z]{2}-\\d{2})(?:\\s*,\\s*[A-Z]{2}-\\d{2})*)\\]/g)];
+    const matches = [...title.matchAll(/\[((?:[A-Z]{2}-\d{2})(?:\s*,\s*[A-Z]{2}-\d{2})*)\]/g)];
     const ids = [...new Set(matches.flatMap(match => match[1].split(',').map(value => value.trim())))];
     if (!ids.length) {
       this.unmappedTests.push({ title, status: result.status });
