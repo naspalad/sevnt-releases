@@ -123,10 +123,10 @@ jobs:
         continue-on-error: true
         run: npx playwright test tests/mac-runtime-ui.spec.js --workers=1
 
-      - name: Test SEVNT menu interactions
+      - name: Test SEVNT menu interactions and enforce 88-case coverage
         id: menu_interactions
         continue-on-error: true
-        run: npx playwright test tests/mac-menu-interactions.spec.js --workers=1
+        run: npm run test:qa:menu-coverage
 
       - name: Test watermark state and override contracts
         id: watermark_contract
@@ -162,11 +162,6 @@ jobs:
         continue-on-error: true
         run: npm run test:qa:plan
 
-      - name: Enforce Full Menu QA Scenario Coverage
-        id: full_menu_coverage
-        continue-on-error: true
-        run: npm run test:qa:menu-coverage
-
       - name: Aggregate independent test results
         if: always()
         env:
@@ -179,7 +174,6 @@ jobs:
           PACKAGED_STARTUP: ${{ steps.packaged_startup.outcome }}
           MASTER_REGRESSION: ${{ steps.master_regression.outcome }}
           FULL_MENU_INVENTORY: ${{ steps.full_menu_inventory.outcome }}
-          FULL_MENU_COVERAGE: ${{ steps.full_menu_coverage.outcome }}
         run: |
           failed=0
           for value in \
@@ -191,8 +185,7 @@ jobs:
             "${PYTHON_RUNTIME}" \
             "${PACKAGED_STARTUP}" \
             "${MASTER_REGRESSION}" \
-            "${FULL_MENU_INVENTORY}" \
-            "${FULL_MENU_COVERAGE}"; do
+            "${FULL_MENU_INVENTORY}"; do
             echo "$value"
             if [ "$value" != "success" ]; then failed=1; fi
           done
