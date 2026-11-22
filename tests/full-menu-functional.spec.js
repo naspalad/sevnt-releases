@@ -103,13 +103,16 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('.gtl-tile').last()).toContainText('QA Highlight Two');
     expect(await count('runPipeline')).toBe(1);
 
-    // CL-05: gallery filters are operable and return to All.
+    // CL-05: gallery filters must return the expected fixture candidates.
+    // Both fixture clips are hot and have completed final FFmpeg outputs.
+    const expectedByFilter = { hot: 2, saved: 2, all: 2 };
     for (const filter of ['hot', 'saved', 'all']) {
       await page.locator('#galleryChips [data-filter="' + filter + '"]').click();
+      await expect(page.locator('.gtl-tile')).toHaveCount(expectedByFilter[filter]);
       await expect(page.locator('.gtl-tile').first()).toBeVisible();
     }
 
-    // CL--06: select all, clear, select one and Done.
+    // CL-06: select all, clear, select one and Done.
     await page.locator('#selectModeBtn').click();
     await expect(page.locator('#statusBar.is-selecting')).toBeVisible();
     await page.locator('#selAllBtn').click();
