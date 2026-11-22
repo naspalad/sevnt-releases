@@ -532,6 +532,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#sv_asrEngine').selectOption({ index: 0 });
     await page.locator('#sv_save').click();
     await expect.poll(() => count('setSettings'), { timeout: 20000 }).toBeGreaterThan(0);
+    const readBack = await page.evaluate(() => window.socl.getSettings());
+    expect(readBack).toHaveProperty('asrEngine');
+    expect(await count('getSettings')).toBeGreaterThan(0);
 
     // ST-06: import and clear cookies through the visible drop-zone; QA bridge stores no real cookies.
     await expect(page.locator('#sv_cookieDrop')).toBeVisible();
@@ -576,8 +579,14 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('.sv-jump button[data-tab="disk"]').click();
     await page.locator('#sv_diskRefresh').click();
     await expect.poll(() => count('diskUsage'), { timeout: 20000 }).toBeGreaterThan(0);
-    await page.evaluate(() => window.socl.clearCache());
+    await page.evaluate(async () => {
+      await window.socl.clearCache();
+      await window.socl.diskDelete('qa-temp-only');
+      await window.socl.diskOpen('qa-temp-only');
+    });
     expect(await count('clearCache')).toBe(1);
+    expect(await count('diskDelete')).toBe(1);
+    expect(await count('diskOpen')).toBe(1);
 
     // ST-11: license status refresh only; activation is not attempted in this mock harness.
     await page.locator('.sv-jump button[data-tab="license"]').click();
