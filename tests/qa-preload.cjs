@@ -7,6 +7,28 @@ const { spawnSync } = require('node:child_process');
 
 const qaVideo = path.join(__dirname, 'fixtures', 'qa-source.mp4');
 const qaTranscript = path.join(__dirname, 'fixtures', 'qa-transcript.srt');
+const qaHistoryDir = path.join(os.tmpdir(), 'sevnt-qa-history-' + process.pid);
+const qaHistoryReport = {
+  createdAt: '2026-01-15T10:00:00.000Z',
+  source: 'QA History Session',
+  inputPath: qaVideo,
+  cfg: { format: 'face', resolution: '1080p' },
+  clips: [{
+    title: 'QA History Clip',
+    hook: 'QA history fixture',
+    start: 0,
+    end: 4,
+    dur: 4,
+    score: 9.2,
+    isHot: true,
+    file: qaVideo,
+    rawFile: qaVideo,
+    srcVideo: qaVideo,
+    previewOnly: false,
+  }],
+};
+fs.mkdirSync(qaHistoryDir, { recursive: true });
+fs.writeFileSync(path.join(qaHistoryDir, 'report.json'), JSON.stringify(qaHistoryReport, null, 2));
 if (!fs.existsSync(qaVideo) || !fs.statSync(qaVideo).size) {
   throw new Error('Prepared QA video fixture is missing: ' + qaVideo);
 }
@@ -146,7 +168,7 @@ const socl = {
   diskUsage: asyncResult('diskUsage', { items: [], total: 0 }),
   diskDelete: asyncResult('diskDelete', { ok: true }),
   diskOpen: asyncResult('diskOpen', { ok: true }),
-  listHistory: asyncResult('listHistory', []),
+  listHistory: asyncResult('listHistory', [{ jobId: 'qa-history-session', dir: qaHistoryDir, report: qaHistoryReport }]),
   historyThumb: asyncResult('historyThumb', null),
   openOutput: asyncResult('openOutput', { ok: true }),
   revealClip: asyncResult('revealClip', { ok: true }),
@@ -156,7 +178,8 @@ const socl = {
     deleteAsset: asyncResult('watermark.deleteAsset', { ok: true }),
   },
   history: {
-    inspect: asyncResult('history.inspect', []), stat: asyncResult('history.stat', {}),
+    inspect: asyncResult('history.inspect', (payload) => Object.fromEntries((payload.sessions || []).map(session => [session.dir, { exists: true, clips: { 0: { exists: true, file: qaVideo, size: fs.statSync(qaVideo).size } } }]))),
+    stat: asyncResult('history.stat', {}),
     trashClips: asyncResult('history.trashClips', { ok: true }),
     trashSession: asyncResult('history.trashSession', { ok: true }),
   },
