@@ -202,6 +202,12 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('.gtl-tile[data-idx="1"]').click();
     await expect(page.locator('.gtl-tile.gtl-active')).toHaveAttribute('data-idx', '1');
 
+    // Gallery tile selection also opens the phone-style preview modal.
+    // Close it through the real UI before interacting with the batch toolbar.
+    await expect(page.locator('#clipPreviewModal')).toBeVisible();
+    await page.locator('#cpmClose').click();
+    await expect(page.locator('#clipPreviewModal')).toBeHidden();
+
     await expect(page.locator('#gb_renderAll')).toBeVisible();
     await page.locator('#gb_renderAll').click();
     await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 }).toBe(2);
