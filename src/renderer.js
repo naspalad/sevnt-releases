@@ -95,6 +95,16 @@ if (window.qaBridge) {
     selectMode: state.selectMode,
     selected: state.selection.list(),
     activeClip: state.activeClip,
+    clips: state.clips.map(clip => ({
+      candidateId: clip.candidateId || null,
+      title: clip.title || null,
+      score: Number(clip.score) || 0,
+      isHot: isHot(clip),
+      file: clip.file || null,
+      previewOnly: !!clip.previewOnly,
+      finalRendered: isFinalRendered(clip),
+      state: clip.state || null,
+    })),
   });
 }
 
