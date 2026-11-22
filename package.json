@@ -36,6 +36,7 @@
     "build:mac:arm64": "electron-builder --mac --arm64",
     "build:mac:x64": "electron-builder --mac --x64",
     "test:qa:plan": "node --test tests/full-menu-qa-plan.test.js",
-    "test:qa:menu-coverage": "playwright test tests/mac-menu-interactions.spec.js --workers=1 --reporter=line,./tests/helpers/full-menu-qa-reporter.cjs"
+    "test:qa:menu-coverage": "playwright test tests/full-menu-functional.spec.js --workers=1 --reporter=line,./tests/helpers/full-menu-qa-reporter.cjs",
+    "test:qa:menu-legacy": "playwright test tests/mac-menu-interactions.spec.js --workers=1"
   }
 }
