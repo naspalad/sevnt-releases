@@ -427,6 +427,13 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect.poll(() => page.locator('#ssVideo2').evaluate(video => video.readyState >= 1), { timeout: 30000 }).toBe(true);
     await expect(page.locator('#ssRemoveV2')).toBeVisible();
 
+    // SP-08: recover from an unavailable second-source media element by removing and selecting a valid source again.
+    await page.locator('#ssVideo2').evaluate(video => { video.removeAttribute('src'); video.load(); });
+    await page.locator('#ssRemoveV2').click();
+    await expect(page.locator('#ssRemoveV2')).toBeHidden();
+    await page.locator('#ssToggleV2').click();
+    await expect.poll(() => page.locator('#ssVideo2').evaluate(video => video.readyState >= 1), { timeout: 30000 }).toBe(true);
+
     // SP-03 / SP-04 / SP-05: independent mute, split ratio and swap.
     await page.locator('#ssMute1').click();
     await page.locator('#ssMute2').click();
