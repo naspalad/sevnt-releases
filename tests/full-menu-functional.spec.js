@@ -525,12 +525,13 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#sv_save').click();
     await expect.poll(() => count('setSettings'), { timeout: 20000 }).toBeGreaterThan(0);
 
-    // ST-06: cookies UI and safe clear action; no real browser cookie data is uploaded.
+    // ST-06: import and clear cookies through the visible drop-zone; QA bridge stores no real cookies.
     await expect(page.locator('#sv_cookieDrop')).toBeVisible();
-    if (await page.locator('#sv_cookieClear').isVisible()) {
-      await page.locator('#sv_cookieClear').click();
-      expect(await count('setCookies')).toBeGreaterThanOrEqual(0);
-    }
+    await page.locator('#sv_cookieDrop').click();
+    await expect.poll(() => count('setCookies'), { timeout: 15000 }).toBeGreaterThan(0);
+    await expect(page.locator('#sv_cookieClear')).toBeVisible();
+    await page.locator('#sv_cookieClear').click();
+    await expect.poll(() => count('setCookies'), { timeout: 15000 }).toBeGreaterThan(1);
 
     // ST-07: Whisper and context model status/install/remove controls in Clip Options.
     await openPanel('clip');
