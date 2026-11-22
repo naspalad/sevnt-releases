@@ -1,4 +1,4 @@
-name: SEVNT Production Integration QA
+name: SEVNT Full Menu + Production Integration QA
 
 on:
   workflow_dispatch:
@@ -9,10 +9,7 @@ on:
       - "sevnt-main.js"
       - "src/**"
       - "engine/**"
-      - "tests/production-*.spec.js"
-      - "tests/production-*.test.cjs"
-      - "tests/helpers/production-electron.cjs"
-      - "tests/helpers/engine-env.js"
+      - "tests/**"
       - "package.json"
       - "package-lock.json"
       - ".github/workflows/production-integration-qa.yml"
@@ -52,6 +49,12 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Validate full-menu QA plan
+        run: npm run test:qa:plan
+
+      - name: Run all 88 menu scenarios (Clips, Clip, Editor, Watermark, Crop, Split, History, Settings, Output, Help)
+        run: xvfb-run -a npm run test:qa:menu-coverage
 
       - name: Install Python engine dependencies
         run: |
