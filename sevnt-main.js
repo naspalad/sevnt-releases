@@ -17,8 +17,19 @@
 const { app } = require('electron');
 const path   = require('path');
 
+const __sevntQaMode = !app.isPackaged && process.env.SEVNT_QA_MODE === '1';
 if (!app.isPackaged) {
-  app.setPath('userData', path.join(app.getPath('appData'), 'SEVNT_Dev'));
+  if (__sevntQaMode && process.env.SEVNT_QA_USER_DATA) {
+    const requested = path.resolve(process.env.SEVNT_QA_USER_DATA);
+    const tempRoot = path.resolve(require('os').tmpdir());
+    const relative = path.relative(tempRoot, requested);
+    if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+      throw new Error('SEVNT_QA_USER_DATA must be a child directory of the OS temp directory');
+    }
+    app.setPath('userData', requested);
+  } else {
+    app.setPath('userData', path.join(app.getPath('appData'), 'SEVNT_Dev'));
+  }
 } else {
   // Packaged build: the original main sets the app name to "SOCL Visuals Studio", which would make Electron use
   // %APPDATA%/SOCL Visuals Studio â€” the profile of a separately installed SOCL app (settings, licence cache, downloaded runtimes).
@@ -130,7 +141,9 @@ app.on('browser-window-created', (_e, win) => {
   win.webContents.once('did-finish-load', async () => {
     const url = win.webContents.getURL();
     if (!url.includes('license-window')) return;
-    if (!(await _sevntLicenseValid())) return;
+    // The QA-only bypass is restricted to unpackaged runs with an explicit test flag
+    // and an isolated temp userData directory. Packaged builds always require a real license.
+    if (!__sevntQaMode && !(await _sevntLicenseValid())) return;
     // License already valid â€” auto-notify so SOCL closes the window
     win.webContents.executeJavaScript(
       'if (window.licenseAPI && window.licenseAPI.notifyActivated) window.licenseAPI.notifyActivated();'
