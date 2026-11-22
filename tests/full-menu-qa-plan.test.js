@@ -57,7 +57,14 @@ test('Full Menu QA plan: each menu has multiple cases and all required evidence 
 
 test('Full Menu QA plan: all 88 scenario IDs are mapped to Playwright tests', () => {
   const mapped = new Set();
-  for (const match of functionalSpec.matchAll(/test\\('\[([^\\]]+)\\]/g)) {
+  for (const line of functionalSpec.split('\n')) {
+    const marker = "test('[";
+    const start = line.indexOf(marker);
+    if (start < 0) continue;
+    const end = line.indexOf(']', start + marker.length);
+    if (end < 0) continue;
+    for (const id of line.slice(start + marker.length, end).split(',').map(value => value.trim())) mapped.add(id);
+  }
     for (const id of match[1].split(',').map(value => value.trim())) mapped.add(id);
   }
   const planned = plan.menus.flatMap(menu => menu.cases.map(([id]) => id));
