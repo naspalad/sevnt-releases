@@ -548,24 +548,26 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#sv_fixYoutube').click();
     await expect.poll(() => count('engines.fixYoutube'), { timeout: 20000 }).toBeGreaterThan(0);
 
-    // ST-09: Telegram status/save/send/clear are exercised with test-only values.
+    // ST-09: Telegram setup dialog, test-only credentials, send and disconnect.
+    await page.locator('.sv-jump button[data-tab="telegram"]').click();
+    await page.locator('#sv_tgSetup').click();
+    await expect(page.locator('.tg-overlay')).toBeVisible();
+    await page.locator('#tgToken').fill('qa-token-not-real');
+    await page.locator('#tgChat').fill('123456789');
+    await page.locator('#tgSave').click();
+    await expect.poll(() => count('telegram.save'), { timeout: 20000 }).toBeGreaterThan(0);
     await page.evaluate(async () => {
-      await window.socl.telegram.status();
-      await window.socl.telegram.save({ token: 'qa-token-not-real', chatId: 'qa-chat-not-real' });
       await window.socl.telegram.send([]);
       await window.socl.telegram.clear();
     });
-    expect(await count('telegram.status')).toBe(1);
-    expect(await count('telegram.save')).toBe(1);
     expect(await count('telegram.send')).toBe(1);
     expect(await count('telegram.clear')).toBe(1);
 
-    // ST-10: disk/cache controls use isolated QA data only.
-    await page.evaluate(async () => {
-      await window.socl.diskUsage();
-      await window.socl.clearCache();
-    });
-    expect(await count('diskUsage')).toBe(1);
+    // ST-10: Disk Usage UI refresh and cache cleanup use the isolated QA profile.
+    await page.locator('.sv-jump button[data-tab="disk"]').click();
+    await page.locator('#sv_diskRefresh').click();
+    await expect.poll(() => count('diskUsage'), { timeout: 20000 }).toBeGreaterThan(0);
+    await page.evaluate(() => window.socl.clearCache());
     expect(await count('clearCache')).toBe(1);
 
     // ST-11: license status refresh only; activation is not attempted in this mock harness.
@@ -632,10 +634,15 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // HE-03 / HE-05: external link targets exist and are explicit HTTPS URLs.
     const links = page.locator('#helpView a[href]');
     const linkCount = await links.count();
+    expect(linkCount).toBeGreaterThan(0);
     for (let i = 0; i < linkCount; i++) {
       const href = await links.nth(i).getAttribute('href');
       expect(href).toMatch(/^https:\/\//);
     }
+
+    // HE-04 / HE-05: tutorial launch/close and local tutorial media availability.
+    const tutorialAssets = ['01-sumber.webm', '04-galeri.webm', '05-gaya-caption.webm', '06-caption-editor.webm', '07-crop.webm', '08-watermark.webm', '09-history.webm', '10-judul-hook.webm', '11-settings.webm', '12-telegram.webm'];
+    for (const asset of tutorialAssets) expect(fs.existsSync(path.join(ROOT, 'assets', 'tour', asset))).toBe(true);
 
     // HE-04: tutorial can start, advance and close without leaving an overlay behind.
     await page.evaluate(() => window.SoclTour && window.SoclTour.start());
