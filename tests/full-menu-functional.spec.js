@@ -237,11 +237,19 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('#ce_tabs')).toBeVisible();
     await expect(page.locator('#ceGutterCues')).toBeVisible();
 
-    // ED-02: cue list and word editing surfaces.
+    // ED-02: cue list, per-word text edit and global subtitle timing shift.
     await page.locator('#ce_tabs button[data-tab="words"]').click();
     await expect(page.locator('[data-page="words"]')).toBeVisible();
-    const cue = page.locator('#ceGutterCues').locator('button, [role="button"]').first();
-    if (await cue.count()) await cue.click();
+    await expect(page.locator('#pw_words .pw-word').first()).toBeVisible();
+    await page.locator('#pw_words .pw-word').first().click();
+    await page.locator('#pw_text').fill('SEVNT_EDITED');
+    await page.locator('#pw_bold').click();
+    await page.locator('#pw_ital').click();
+    await page.locator('#pw_color').fill('#ff0000');
+    await page.locator('#pw_size').fill('80');
+    await page.locator('#pw_size').dispatchEvent('change');
+    await page.locator('#tl_shR').click();
+    await page.locator('#tl_shL').click();
 
     // ED-03: typography, case, size, position and color.
     await page.locator('#ce_tabs button[data-tab="style"]').click();
