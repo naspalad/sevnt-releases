@@ -196,8 +196,10 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
       description: 'Select Mode (Select All/Clear/Render Selected/Done) deferred pending UI fix.',
     });
 
-    await page.locator('.gtl-tile').first().click();
-    await page.locator('#nextArrow').click();
+    // Select the second clip tile directly. The preview chevron selector is
+    // not part of the current dashboard DOM; tile selection is the supported
+    // interaction for changing the active clip in this gallery.
+    await page.locator('.gtl-tile[data-idx="1"]').click();
     await expect(page.locator('.gtl-tile.gtl-active')).toHaveAttribute('data-idx', '1');
 
     await expect(page.locator('#gb_renderAll')).toBeVisible();
@@ -231,6 +233,9 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     });
+    // Effects & Output is a separate collapsed accordion card.
+    await page.locator('#captionStudioBody .cap-card:has(#ce_anim) > .cap-sec').click();
+    await expect(page.locator('#ce_anim button[data-v="fade"]')).toBeVisible();
     await page.locator('#ce_anim button[data-v="fade"]').click();
     await expect(page.locator('#ce_anim button[data-v="fade"]')).toHaveClass(/active/);
 
