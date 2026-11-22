@@ -65,8 +65,6 @@ test('Full Menu QA plan: all 88 scenario IDs are mapped to Playwright tests', ()
     if (end < 0) continue;
     for (const id of line.slice(start + marker.length, end).split(',').map(value => value.trim())) mapped.add(id);
   }
-    for (const id of match[1].split(',').map(value => value.trim())) mapped.add(id);
-  }
   const planned = plan.menus.flatMap(menu => menu.cases.map(([id]) => id));
   assert.equal(mapped.size, 88, 'Functional Playwright suite must map 88 unique scenario IDs');
   for (const id of planned) assert.ok(mapped.has(id), 'Missing Playwright implementation for ' + id);
