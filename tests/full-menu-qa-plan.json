@@ -488,9 +488,9 @@
   ],
   "implementation": {
     "rendererMock": "IMPLEMENTED_NOT_EXECUTED",
-    "productionIpc": "IMPLEMENTED_NOT_EXECUTED_REAL_ELECTRON_MAIN_AND_PRELOAD",
+    "productionIpc": "IMPLEMENTED_NOT_EXECUTED_SAFE_READ_ONLY_IPC_SMOKE; FULL_MENU_SIDE_EFFECT_MATRIX_PENDING",
     "productionMedia": "IMPLEMENTED_NOT_EXECUTED_REAL_FFMPEG_FFPROBE_AND_ENGINE_SMOKE; LEGACY_UI_RENDER_INTEGRATION_NOT_COVERED",
-    "restartPersistence": "IMPLEMENTED_NOT_EXECUTED_REAL_ELECTRON_RELAUNCH_SETTINGS_PROBE",
+    "restartPersistence": "IMPLEMENTED_NOT_EXECUTED_SETTINGS_ONLY; WATERMARK_HISTORY_EDITOR_PERSISTENCE_PENDING",
     "testFile": "tests/full-menu-functional.spec.js",
     "testCommand": "npm run test:qa:menu-coverage",
     "scopeNote": "All 88 case IDs are mapped into ten menu-level Playwright tests. The current suite runs against qa-electron-main.cjs and qa-preload.cjs; this is isolated renderer/fixture coverage, not production integration evidence. Some case groups include prerequisite/contract checks where the QA harness cannot reproduce the production side effect. Production IPC and restart-persistence test harnesses now launch the real Electron package entry point with src/preload.js in a disposable temp userData profile. The media harness runs bundled FFmpeg/FFprobe transformations and the real Python EngineSupervisor. IMPORTANT: current server.py only mounts S1 health/system/ASR endpoints; the separate api/main.py project/render API is not mounted, so legacy renderer-to-production-render integration for every editor effect remains NOT COVERED. All production suites are implemented but NOT EXECUTED.",
