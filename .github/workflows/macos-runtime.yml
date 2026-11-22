@@ -128,6 +128,11 @@ jobs:
         continue-on-error: true
         run: npm run test:qa:menu-coverage
 
+      - name: Run legacy menu interaction regression
+        id: menu_legacy
+        continue-on-error: true
+        run: npm run test:qa:menu-legacy
+
       - name: Test watermark state and override contracts
         id: watermark_contract
         continue-on-error: true
@@ -168,6 +173,7 @@ jobs:
           NAVIGATION_CONTRACT: ${{ steps.navigation_contract.outcome }}
           RUNTIME_UI: ${{ steps.runtime_ui.outcome }}
           MENU_INTERACTIONS: ${{ steps.menu_interactions.outcome }}
+          MENU_LEGACY: ${{ steps.menu_legacy.outcome }}
           WATERMARK_CONTRACT: ${{ steps.watermark_contract.outcome }}
           FFMPEG_RUNTIME: ${{ steps.ffmpeg_runtime.outcome }}
           PYTHON_RUNTIME: ${{ steps.python_runtime.outcome }}
@@ -180,6 +186,7 @@ jobs:
             "${NAVIGATION_CONTRACT}" \
             "${RUNTIME_UI}" \
             "${MENU_INTERACTIONS}" \
+            "${MENU_LEGACY}" \
             "${WATERMARK_CONTRACT}" \
             "${FFMPEG_RUNTIME}" \
             "${PYTHON_RUNTIME}" \
