@@ -203,8 +203,12 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
       await expect(page.locator(id)).toBeAttached();
     }
 
-    // CP-02: Manual clip segments expose explicit start/end boundaries and validate ordering.
-    await page.locator('#f_clipMode button[data-v="manual"]').evaluate(button => button.click());
+    // CP-02: use the actual Source chip -> popover interaction. The option buttons
+    // live inside a closed body-level popover and must not be clicked programmatically
+    // while hidden (that bypasses the UI interaction the user actually performs).
+    await page.locator('#spQuick .sp-chip-btn').first().click();
+    await expect(page.locator('#f_clipMode button[data-v="manual"]')).toBeVisible();
+    await page.locator('#f_clipMode button[data-v="manual"]').click();
     await expect(page.locator('#f_manualWrap')).toBeVisible();
     await page.locator('#f_msAdd').click();
     const firstSegment = page.locator('#f_msRows .ms-row').first();
@@ -214,14 +218,20 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#f_msAdd').click();
     await expect(page.locator('#f_msRows .ms-row')).toHaveCount(2);
 
-    // CP-03: format, resolution, subtitle language/burn, manual duration and processing toggles.
+    // CP-03: restore Auto because pure Manual mode intentionally hides AI duration.
+    // Then open the Duration chip before selecting its Manual duration option.
+    await page.locator('#spQuick .sp-chip-btn').first().click();
+    await expect(page.locator('#f_clipMode button[data-v="auto"]')).toBeVisible();
+    await page.locator('#f_clipMode button[data-v="auto"]').click();
     await page.locator('#f_fastQ').check({ force: true });
     await page.locator('#f_burnQ').check({ force: true });
     await page.locator('#f_smartQ').check({ force: true });
     await page.locator('#f_subtitleLang').selectOption('id');
     await page.locator('#f_format button[data-v="square"]').evaluate(button => button.click());
     await page.locator('#f_resolution button[data-v="1080p"]').evaluate(button => button.click());
-    await page.locator('#f_clipDuration button[data-v="manual"]').evaluate(button => button.click());
+    await page.locator('#spQuick .sp-chip-btn').nth(2).click();
+    await expect(page.locator('#f_clipDuration button[data-v="manual"]')).toBeVisible();
+    await page.locator('#f_clipDuration button[data-v="manual"]').click();
     await expect(page.locator('#f_clipDurationManual')).toBeVisible();
     await page.locator('#f_clipDurationSec').fill('99999');
     await page.locator('#f_clipDurationSec').dispatchEvent('change');
