@@ -168,25 +168,35 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('#panelTitle')).toContainText(/clip/i);
 
     // CP-01: all principal option groups/default controls are present.
-    for (const id of ['#f_fastQ', '#f_burnQ', '#f_smartQ', '#f_subtitleLang', '#f_burnFont', '#f_track', '#f_format', '#f_resolution', '#f_preset']) {
+    for (const id of ['#f_fastQ', '#f_burnQ', '#f_smartQ', '#f_subtitleLang', '#f_burnFont', '#f_track', '#f_format', '#f_resolution', '#f_clipMode', '#f_clipCountVal', '#f_clipDuration']) {
       await expect(page.locator(id)).toBeAttached();
     }
 
-    // CP-02: clip boundaries are represented by the selected clip's valid duration and preview timeline.
-    await page.locator('.gtl-tile[data-idx="0"]').click();
-    await expect(page.locator('#clipPreviewModal')).toBeVisible();
-    const duration = await page.locator('#cpmVideo').evaluate(v => Number.isFinite(v.duration) ? v.duration : 0);
-    expect(duration).toBeGreaterThanOrEqual(0);
-    await page.locator('#cpmClose').click();
+    // CP-02: Manual clip segments expose explicit start/end boundaries and validate ordering.
+    await page.locator('#f_clipMode button[data-v="manual"]').click();
+    await expect(page.locator('#f_manualWrap')).toBeVisible();
+    await page.locator('#f_msAdd').click();
+    const firstSegment = page.locator('#f_msRows .ms-row').first();
+    await firstSegment.locator('input[data-k="start"]').fill('00:10');
+    await firstSegment.locator('input[data-k="end"]').fill('00:25');
+    await expect(firstSegment).toHaveClass(/ok/);
+    await page.locator('#f_msAdd').click();
+    await expect(page.locator('#f_msRows .ms-row')).toHaveCount(2);
 
-    // CP-03: format, resolution, subtitle language/burn, speed/tracking options.
+    // CP-03: format, resolution, subtitle language/burn, manual duration and processing toggles.
     await page.locator('#f_fastQ').check({ force: true });
     await page.locator('#f_burnQ').check({ force: true });
     await page.locator('#f_smartQ').check({ force: true });
     await page.locator('#f_subtitleLang').selectOption('id');
-    if (await page.locator('#f_format').isVisible()) await page.locator('#f_format').selectOption({ index: 0 });
-    if (await page.locator('#f_resolution').isVisible()) await page.locator('#f_resolution').selectOption({ index: 0 });
-    if (await page.locator('#f_preset').isVisible()) await page.locator('#f_preset').selectOption({ index: 0 });
+    await page.locator('#f_format button[data-v="square"]').click();
+    await page.locator('#f_resolution button[data-v="1080p"]').click();
+    await page.locator('#f_clipDuration button[data-v="manual"]').click();
+    await expect(page.locator('#f_clipDurationManual')).toBeVisible();
+    await page.locator('#f_clipDurationSec').fill('99999');
+    await page.locator('#f_clipDurationSec').dispatchEvent('change');
+    const durationValue = Number(await page.locator('#f_clipDurationSec').inputValue());
+    expect(Number.isFinite(durationValue)).toBe(true);
+    expect(durationValue).toBeLessThan(99999);
     await expect(page.locator('#f_fastQ')).toBeChecked();
     await expect(page.locator('#f_burnQ')).toBeChecked();
 
@@ -209,7 +219,11 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.evaluate(() => window.socl.renderEdit({ srcVideo: '', clipStart: 0, clipEnd: 4, qaScenario: 'CP-07' }));
     await expect.poll(() => count('renderEdit'), { timeout: 30000 }).toBe(before + 1);
 
-    // CP-08: out-of-range numeric input must be clamped or rejected, never leave NaN.
+    // CP-08: contradictory manual start/end must be surfaced as invalid, not accepted as a valid segment.
+    const lastSegment = page.locator('#f_msRows .ms-row').last();
+    await lastSegment.locator('input[data-k="start"]').fill('00:40');
+    await lastSegment.locator('input[data-k="end"]').fill('00:20');
+    await expect(lastSegment).toHaveClass(/bad/);
     if (await page.locator('#f_track').count()) {
       await setRange('#f_track', 999);
       const val = await page.locator('#f_track').inputValue();
