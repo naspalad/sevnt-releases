@@ -18,7 +18,7 @@ const expectedMenus = [
 test('Full Menu QA plan: exactly ten required menus are present', () => {
   assert.equal(plan.status, 'RENDERER_SCENARIOS_IMPLEMENTED_NOT_EXECUTED');
   assert.equal(plan.implementation.rendererMock, 'IMPLEMENTED_NOT_EXECUTED');
-  assert.equal(plan.implementation.productionIpc, 'NOT_IMPLEMENTED');
+  assert.equal(plan.implementation.productionIpc, 'IMPLEMENTED_NOT_EXECUTED_SAFE_READ_ONLY_IPC_SMOKE; FULL_MENU_SIDE_EFFECT_MATRIX_PENDING');
   assert.equal(plan.menus.length, 10);
   assert.deepEqual(plan.menus.map(menu => menu.name), expectedMenus);
 });
