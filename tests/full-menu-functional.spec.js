@@ -286,6 +286,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
 
   // M04 — Watermark: WM-01..WM-09
   test('[WM-01, WM-02, WM-03, WM-04, WM-05, WM-06, WM-07, WM-08, WM-09] Watermark — upload validation, enable, anchor, geometry, text rows, delete, save, render and clip override surface', async () => {
+    await seedClips();
     await openPanel('watermark');
     await expect(page.locator('#wm_file')).toBeAttached();
 
@@ -319,11 +320,18 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#wmLines .wm-line [data-act="down"]').first().click();
     await page.locator('#wmLines .wm-line [data-act="del"]').last().click();
 
+    // WM-09: per-clip override badge toggles OFF and returns to project default on the next click.
+    const wmBadge = page.locator('.wm-badge').first();
+    await expect(wmBadge).toBeVisible();
+    await wmBadge.click();
+    await expect(page.locator('.wm-badge').first()).toHaveClass(/wm-off/);
+    await page.locator('.wm-badge').first().click();
+    await expect(page.locator('.wm-badge').first()).not.toHaveClass(/wm-off/);
+
     // WM-06: delete stored image asset and clear configured image.
-    if (await page.locator('#wm_remove').count()) {
-      await page.locator('#wm_remove').click();
-      await expect.poll(() => count('watermark.deleteAsset'), { timeout: 15000 }).toBeGreaterThan(0);
-    }
+    await expect(page.locator('#wm_remove')).toBeVisible();
+    await page.locator('#wm_remove').click();
+    await expect.poll(() => count('watermark.deleteAsset'), { timeout: 15000 }).toBeGreaterThan(0);
 
     // WM-07: save/readback in the isolated harness (not a disk/restart persistence claim).
     await expect.poll(() => count('setSettings'), { timeout: 15000 }).toBeGreaterThan(0);
@@ -331,7 +339,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await openPanel('watermark');
     await expect(page.locator('#wm_enabled')).toBeAttached();
 
-    // WM-08: route render with watermark settings; WM-09: clip-specific WM affordance is discoverable.
+    // WM-08: route render with watermark settings and verify fixture FFmpeg work.
     await page.evaluate(() => window.socl.renderEdit({ srcVideo: '', clipStart: 0, clipEnd: 4, watermark: { enabled: true }, qaScenario: 'WM-08' }));
     await expect.poll(() => count('ffmpegRender'), { timeout: 30000 }).toBeGreaterThan(0);
     await expect(page.locator('#wmOverlay')).toBeAttached();
