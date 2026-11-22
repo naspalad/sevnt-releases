@@ -208,8 +208,9 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#cpmClose').click();
     await expect(page.locator('#clipPreviewModal')).toBeHidden();
 
-    await expect(page.locator('#gb_renderAll')).toBeVisible();
-    await page.locator('#gb_renderAll').click();
+    // Use the visible Clips-page action. It forwards to the legacy batch-render handler.
+    await expect(page.locator('#crRenderAllBtn')).toBeVisible();
+    await page.locator('#crRenderAllBtn').click();
     await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 }).toBe(2);
     await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
     const rendered = (await calls()).filter(x => x.name === 'ffmpegRender');
