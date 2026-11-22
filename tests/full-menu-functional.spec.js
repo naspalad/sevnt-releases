@@ -456,7 +456,7 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await openPanel('history');
     await expect(page.locator('#historyPage')).toBeVisible();
     await expect(page.locator('#hpSearch')).toBeVisible();
-    await expect(page.locator('#hpList')).toContainText(/batch|belum ada/i);
+    await expect(page.locator('#hpList .pj-row')).toHaveCount(1);
 
     // HI-02 / HI-03: search, tabs and refresh.
     await page.locator('#hpSearch').fill('qa');
