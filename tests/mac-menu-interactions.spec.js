@@ -234,12 +234,14 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#cpmClose').click();
     await expect(page.locator('#clipPreviewModal')).toBeHidden();
 
-    // Use the visible Clips-page action. It forwards to the legacy batch-render handler.
+    // Count only calls caused by Render All; earlier selected-clip rendering is expected.
+    const batchRenderEditBefore = (await calls()).filter(x => x.name === 'renderEdit').length;
+    const batchFfmpegBefore = (await calls()).filter(x => x.name === 'ffmpegRender').length;
     await expect(page.locator('#crRenderAllBtn')).toBeVisible();
     await page.locator('#crRenderAllBtn').click();
-    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 }).toBe(2);
-    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
-    const rendered = (await calls()).filter(x => x.name === 'ffmpegRender');
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length - batchRenderEditBefore, { timeout: 60000 }).toBe(2);
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length - batchFfmpegBefore, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
+    const rendered = (await calls()).filter(x => x.name === 'ffmpegRender').slice(batchFfmpegBefore);
     const outputs = rendered.map(x => x.value && x.value.output).filter(Boolean);
     expect(outputs.length).toBeGreaterThanOrEqual(4);
     for (const output of outputs) {
