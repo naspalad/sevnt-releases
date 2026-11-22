@@ -44,6 +44,7 @@ const { contextBridge } = require('electron');
 const calls = [];
 const listeners = new Map();
 let renderSequence = 0;
+let qaSettings = {};
 const record = (name, value) => { calls.push({ name, value: value ?? null }); };
 const asyncResult = (name, value) => async (...args) => {
   record(name, args[0]);
@@ -150,8 +151,8 @@ const socl = {
   saveClipMeta: asyncResult('saveClipMeta', { ok: true }),
   saveClipEdits: asyncResult('saveClipEdits', { ok: true }),
   cancel: asyncResult('cancel', { ok: true }),
-  getSettings: asyncResult('getSettings', {}),
-  setSettings: asyncResult('setSettings', (args) => args[0] || {}),
+  getSettings: asyncResult('getSettings', () => ({ ...qaSettings })),
+  setSettings: asyncResult('setSettings', (args) => { qaSettings = { ...qaSettings, ...(args[0] || {}) }; return { ...qaSettings }; }),
   testProvider: asyncResult('testProvider', { ok: true }),
   secretsAvailable: asyncResult('secretsAvailable', []),
   secretsDiagnose: asyncResult('secretsDiagnose', {}),
