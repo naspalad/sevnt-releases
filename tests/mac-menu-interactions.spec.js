@@ -240,10 +240,14 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await expect(page.locator('#crRenderAllBtn')).toBeVisible();
     await page.locator('#crRenderAllBtn').click();
     await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length - batchRenderEditBefore, { timeout: 60000 }).toBe(2);
-    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length - batchFfmpegBefore, { timeout: 60000 }).toBeGreaterThanOrEqual(4);
+
+    // The deterministic QA fixture contains exactly two candidates. Each
+    // renderEdit call runs renderFixture once, so the correct contract is
+    // two FFmpeg invocations and two output files (not four).
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'ffmpegRender').length - batchFfmpegBefore, { timeout: 60000 }).toBe(2);
     const rendered = (await calls()).filter(x => x.name === 'ffmpegRender').slice(batchFfmpegBefore);
     const outputs = rendered.map(x => x.value && x.value.output).filter(Boolean);
-    expect(outputs.length).toBeGreaterThanOrEqual(4);
+    expect(outputs).toHaveLength(2);
     for (const output of outputs) {
       expect(fs.existsSync(output)).toBe(true);
       expect(fs.statSync(output).size).toBeGreaterThan(1000);
