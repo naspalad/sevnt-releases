@@ -268,10 +268,25 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // ED-05: create title and manual caption, edit text, then remove through UI if available.
     await page.locator('#ce_tabs button[data-tab="titles"]').click();
     await page.locator('#ce_addTitle').click();
-    await expect(page.locator('#ce_titles_list').locator('> *')).toHaveCount(1);
+    await expect(page.locator('#ce_titles_list .title-card')).toHaveCount(1);
+    const titleCard = page.locator('#ce_titles_list .title-card').first();
+    await titleCard.locator('.tt_text').fill('SEVNT QA TITLE');
+    await titleCard.locator('.tt_start').fill('0.20');
+    await titleCard.locator('.tt_end').fill('1.80');
+    await titleCard.locator('.tt_fs').fill('88');
+    await page.locator('#ce_addTitle').click();
+    await expect(page.locator('#ce_titles_list .title-card')).toHaveCount(2);
+    await page.locator('#ce_titles_list .title-card').last().locator('.tt_del').click();
+    await expect(page.locator('#ce_titles_list .title-card')).toHaveCount(1);
+
     await page.locator('#ce_tabs button[data-tab="manualcap"]').click();
     await page.locator('#ce_addMc').click();
-    await expect(page.locator('#ce_mc_list').locator('> *')).toHaveCount(1);
+    await expect(page.locator('#ce_mc_list .mc-card')).toHaveCount(1);
+    const manualCard = page.locator('#ce_mc_list .mc-card').first();
+    await manualCard.locator('.mc_text').fill('Manual QA caption');
+    await manualCard.locator('.mc_start').fill('0.40');
+    await manualCard.locator('.mc_end').fill('1.60');
+    await manualCard.locator('.mc_mode button[data-v="layer"]').click();
 
     // ED-06: undo/redo around edit operations.
     await expect(page.locator('#ce_undo')).toBeVisible();
