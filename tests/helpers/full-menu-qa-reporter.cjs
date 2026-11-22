@@ -107,10 +107,9 @@ class FullMenuQaReporter {
     fs.writeFileSync(path.join(this.outputDir, 'full-menu-qa-report.md'), summary + '\n');
 
     console.log(`\\n[SEVNT QA] ${report.summary.pass}/${report.summary.planned} scenarios PASS; ${report.summary.notImplemented} NOT_IMPLEMENTED; ${report.summary.fail} failed.`);
-    if (report.summary.notImplemented || report.summary.fail || report.summary.skipped || unknown.length) {
-      return { status: 'failed' };
+    if (report.summary.notImplemented || report.summary.fail || report.summary.skipped || unknown.length || report.summary.unmappedTests) {
+      process.exitCode = 1;
     }
-    return { status: result.status };
   }
 }
 
