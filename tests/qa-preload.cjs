@@ -45,6 +45,7 @@ const calls = [];
 const listeners = new Map();
 let renderSequence = 0;
 let qaSettings = {};
+const qaPipelineDiagnostics = { started: 0, detected: 0, completed: 0, renders: [], errors: [] };
 const record = (name, value) => { calls.push({ name, value: value ?? null }); };
 const asyncResult = (name, value) => async (...args) => {
   record(name, args[0]);
@@ -90,6 +91,7 @@ function renderFixture(payload = {}) {
 
 async function runQaPipeline(payload = {}) {
   record('runPipeline', payload);
+  qaPipelineDiagnostics.started++;
   const source = payload.source && fs.existsSync(payload.source) ? payload.source : qaVideo;
   const candidates = [
     { candidateId: 'qa-clip-1', title: 'QA Highlight One', score: 9.4, isHot: true, category: 'highlight', start: 0, end: 4, dur: 4, srcVideo: source, state: 'rendering' },
@@ -97,10 +99,20 @@ async function runQaPipeline(payload = {}) {
   ];
   emit('sourcePreview', { phase: 'local', srcVideo: source, file: source });
   emit('clipsDetected', candidates);
+  qaPipelineDiagnostics.detected += candidates.length;
   const completed = [];
   for (const candidate of candidates) {
     emit('clipState', { candidateId: candidate.candidateId, state: 'rendering', detail: 'QA fixture clip' });
-    const rendered = renderFixture({ srcVideo: source, clipStart: candidate.start, clipEnd: candidate.end });
+    let rendered;
+    try {
+      rendered = renderFixture({ srcVideo: source, clipStart: candidate.start, clipEnd: candidate.end });
+      qaPipelineDiagnostics.renders.push({ candidateId: candidate.candidateId, ok: true, file: rendered.file, exists: fs.existsSync(rendered.file), size: fs.existsSync(rendered.file) ? fs.statSync(rendered.file).size : 0 });
+    } catch (error) {
+      const detail = { candidateId: candidate.candidateId, message: error?.message || String(error), stack: error?.stack || null };
+      qaPipelineDiagnostics.errors.push(detail);
+      emit('error', detail);
+      throw error;
+    }
     const clip = {
       ...candidate,
       state: 'ready',
@@ -128,6 +140,7 @@ async function runQaPipeline(payload = {}) {
     };
     completed.push(clip);
     emit('clip', clip);
+    qaPipelineDiagnostics.completed++;
   }
   emit('done', { clips: completed });
   return { ok: true, qa: true, clips: completed };
@@ -220,4 +233,5 @@ contextBridge.exposeInMainWorld('sevnt', sevnt);
 contextBridge.exposeInMainWorld('qaBridge', {
   getCalls: () => calls.slice(),
   resetCalls: () => { calls.length = 0; },
+  getPipelineDiagnostics: () => JSON.parse(JSON.stringify(qaPipelineDiagnostics)),
 });
