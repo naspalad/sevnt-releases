@@ -188,13 +188,39 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
 
     const beforeSelect = await page.evaluate(() => window.__sevntQaInspect?.());
     expect(beforeSelect, 'QA renderer state before Select All').toMatchObject({ clipCount: 2, filter: 'all' });
-    // TEMPORARY SKIP: Select Mode actions are inaccessible because #statusBar
-    // is intentionally hidden by production CSS. Keep the rest of Clips
-    // coverage running; do not mark Select Mode as passed.
-    test.info().annotations.push({
-      type: 'skipped-feature',
-      description: 'Select Mode (Select All/Clear/Render Selected/Done) deferred pending UI fix.',
-    });
+    // Select Mode toolbar is restored as a floating action bar above the gallery.
+    await page.locator('#selectModeBtn').click();
+    await expect(page.locator('#statusBar.is-selecting')).toBeVisible();
+    await expect(page.locator('#sbarSelectAct')).toBeVisible();
+    await expect(page.locator('#selRenderBtn')).toBeDisabled();
+
+    await page.locator('#selAllBtn').click();
+    await expect(page.locator('#selCount')).toHaveText('2');
+    await expect(page.locator('.gtl-tile.gtl-picked')).toHaveCount(2);
+    await expect(page.locator('#selRenderBtn')).toBeEnabled();
+
+    await page.locator('#selClearBtn').click();
+    await expect(page.locator('#selCount')).toHaveText('0');
+    await expect(page.locator('.gtl-tile.gtl-picked')).toHaveCount(0);
+    await expect(page.locator('#selRenderBtn')).toBeDisabled();
+
+    await page.locator('.gtl-tile[data-idx="0"]').click();
+    await expect(page.locator('#selCount')).toHaveText('1');
+    await expect(page.locator('.gtl-tile.gtl-picked')).toHaveCount(1);
+    await expect(page.locator('#selRenderBtn')).toBeEnabled();
+
+    const selectedRenderBefore = (await calls()).filter(x => x.name === 'renderEdit').length;
+    await page.locator('#selRenderBtn').click();
+    // Subtitle-off projects ask for an explicit choice before rendering.
+    const subtitleChoice = page.locator('.choice-dlg');
+    if (await subtitleChoice.isVisible().catch(() => false)) {
+      await subtitleChoice.locator('button[data-i="1"]').click();
+    }
+    await expect.poll(async () => (await calls()).filter(x => x.name === 'renderEdit').length, { timeout: 60000 })
+      .toBeGreaterThan(selectedRenderBefore);
+    await page.locator('#selDoneBtn').click();
+    await expect(page.locator('#sbarSelectAct')).toBeHidden();
+    await expect(page.locator('#statusBar.is-selecting')).toBeHidden();
 
     // Select the second clip tile directly. The preview chevron selector is
     // not part of the current dashboard DOM; tile selection is the supported
