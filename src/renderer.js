@@ -87,6 +87,17 @@ const state = {
   selection: window.ClipSelect.createSelection(),
 };
 
+// QA-only state inspection: absent from normal production windows.
+if (window.qaBridge) {
+  window.__sevntQaInspect = () => ({
+    clipCount: state.clips.length,
+    filter: state.filter,
+    selectMode: state.selectMode,
+    selected: state.selection.list(),
+    activeClip: state.activeClip,
+  });
+}
+
 // [WM-V1] Pure state module — same file is required by main + pipeline for
 // a single source of truth on defaults, geometry, and merge semantics.
 // Project-level watermark lives on state.cfg.watermark (persisted via
