@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "title": "SEVNT Studio Full Menu QA Coverage Plan",
+  "status": "DESIGNED_NOT_EXECUTED",
+  "branch": "qa/full-menu-coverage-design",
+  "policy": {
+    "noSilentSkips": true,
+    "distinguishMockFromProduction": true,
+    "productionEvidenceRequiredForRelease": true,
+    "everyCaseMustRecordArtifacts": true,
+    "noProductionCodeChangesToSatisfyIncorrectTestExpectations": true
+  },
+  "testLayers": [
+    {
+      "id": "static",
+      "name": "Static implementation and selector inventory",
+      "purpose": "Verify every planned control maps to an existing UI element, renderer handler, preload API and main-process IPC handler where applicable.",
+      "countsAsProductionPass": false
+    },
+    {
+      "id": "renderer",
+      "name": "Renderer interaction tests",
+      "purpose": "Exercise visible controls, validation, navigation, empty/error states and state transitions in a real Electron window.",
+      "countsAsProductionPass": false
+    },
+    {
+      "id": "ipc",
+      "name": "Production IPC integration",
+      "purpose": "Launch the packaged/development Electron app with the real preload and main process; verify actual IPC handlers and side effects.",
+      "countsAsProductionPass": true
+    },
+    {
+      "id": "media",
+      "name": "Real media pipeline and output validation",
+      "purpose": "Run real FFmpeg/Python paths and inspect outputs with ffprobe plus decode/frame/audio checks.",
+      "countsAsProductionPass": true
+    },
+    {
+      "id": "persistence",
+      "name": "Persistence and restart regression",
+      "purpose": "Verify settings, history, assets and edits survive app restart where persistence is part of the feature.",
+      "countsAsProductionPass": true
+    }
+  ],
+  "evidenceContract": [
+    "caseId",
+    "menu",
+    "environment",
+    "testLayer",
+    "action",
+    "expected",
+    "actual",
+    "status",
+    "failureClass",
+    "screenshotOrTrace",
+    "logs",
+    "outputArtifact",
+    "commitSha"
+  ],
+  "menus": [
+    {
+      "id": "M01",
+      "name": "Clips",
+      "cases": [
+        [
+          "CL-01",
+          "Import local video; verify metadata and selected source."
+        ],
+        [
+          "CL-02",
+          "Paste a supported video URL; validate accepted and rejected URL states."
+        ],
+        [
+          "CL-03",
+          "Attach, replace and clear transcript/subtitle."
+        ],
+        [
+          "CL-04",
+          "Run Find Highlights; verify progress, completion, error and candidate list."
+        ],
+        [
+          "CL-05",
+          "Exercise All/Hot/Saved filters and empty results."
+        ],
+        [
+          "CL-06",
+          "Enter Select Mode; Select All, select individual, Clear, Done."
+        ],
+        [
+          "CL-07",
+          "Preview each candidate; play/pause, seek, close and switch active candidate."
+        ],
+        [
+          "CL-08",
+          "Render Selected and Render All; reconcile candidate count, render calls and outputs one-to-one."
+        ],
+        [
+          "CL-09",
+          "Cancel in-flight pipeline/render and verify UI returns to a stable state."
+        ],
+        [
+          "CL-10",
+          "Validate actual rendered files using ffprobe, non-zero duration/size and decode sample."
+        ]
+      ]
+    },
+    {
+      "id": "M02",
+      "name": "Clip",
+      "cases": [
+        [
+          "CP-01",
+          "Verify all clip option groups and default values."
+        ],
+        [
+          "CP-02",
+          "Change trim start/end and enforce valid duration/bounds."
+        ],
+        [
+          "CP-03",
+          "Exercise aspect, quality, subtitle language/burn and speed options."
+        ],
+        [
+          "CP-04",
+          "Navigate between clips and preserve the correct active clip."
+        ],
+        [
+          "CP-05",
+          "Play, pause, seek and verify preview source/time."
+        ],
+        [
+          "CP-06",
+          "Save clip options, navigate away/back and verify state."
+        ],
+        [
+          "CP-07",
+          "Render a configured clip and verify output media metadata."
+        ],
+        [
+          "CP-08",
+          "Reject invalid or contradictory trim/configuration values without corrupting state."
+        ]
+      ]
+    },
+    {
+      "id": "M03",
+      "name": "Editor",
+      "cases": [
+        [
+          "ED-01",
+          "Open/close editor and load selected clip and transcript."
+        ],
+        [
+          "ED-02",
+          "Edit caption text, timing and manual captions."
+        ],
+        [
+          "ED-03",
+          "Change typography, case, size, color, position and style controls."
+        ],
+        [
+          "ED-04",
+          "Change animation/effects and verify preview state."
+        ],
+        [
+          "ED-05",
+          "Add, edit, reorder and delete title cards."
+        ],
+        [
+          "ED-06",
+          "Exercise undo/redo across multiple edit operations."
+        ],
+        [
+          "ED-07",
+          "Preview edits and verify preview reflects current edit state."
+        ],
+        [
+          "ED-08",
+          "Render edited clip; verify subtitle/title content and media output."
+        ],
+        [
+          "ED-09",
+          "Close/reopen editor and verify expected draft persistence or explicit reset behavior."
+        ]
+      ]
+    },
+    {
+      "id": "M04",
+      "name": "Watermark",
+      "cases": [
+        [
+          "WM-01",
+          "Upload valid image watermark and reject unsupported/corrupt files."
+        ],
+        [
+          "WM-02",
+          "Enable/disable watermark and verify visible state."
+        ],
+        [
+          "WM-03",
+          "Exercise all anchor positions and X/Y geometry."
+        ],
+        [
+          "WM-04",
+          "Change size and opacity; verify bounds and preview."
+        ],
+        [
+          "WM-05",
+          "Add/edit/remove multiple text rows."
+        ],
+        [
+          "WM-06",
+          "Delete stored asset and verify missing-asset handling."
+        ],
+        [
+          "WM-07",
+          "Save settings, restart and verify persisted watermark configuration."
+        ],
+        [
+          "WM-08",
+          "Render image and text watermark; inspect actual output frames."
+        ],
+        [
+          "WM-09",
+          "Verify per-clip override precedence and reset-to-global behavior."
+        ]
+      ]
+    },
+    {
+      "id": "M05",
+      "name": "Crop Studio",
+      "cases": [
+        [
+          "CR-01",
+          "Open Crop Studio with a selected clip and verify source media."
+        ],
+        [
+          "CR-02",
+          "Exercise every aspect preset and free aspect."
+        ],
+        [
+          "CR-03",
+          "Change X/Y position, zoom and crop bounds."
+        ],
+        [
+          "CR-04",
+          "Add, select, navigate and delete keyframes."
+        ],
+        [
+          "CR-05",
+          "Exercise undo, redo and reset."
+        ],
+        [
+          "CR-06",
+          "Apply to current clip and Apply All; verify target scope."
+        ],
+        [
+          "CR-07",
+          "Verify live preview and final crop geometry."
+        ],
+        [
+          "CR-08",
+          "Render and validate dimensions, duration and decoded frames."
+        ],
+        [
+          "CR-09",
+          "Verify disabled/gated state without a selected clip."
+        ]
+      ]
+    },
+    {
+      "id": "M06",
+      "name": "Split Studio",
+      "cases": [
+        [
+          "SP-01",
+          "Open Split Studio and verify first source."
+        ],
+        [
+          "SP-02",
+          "Enable/disable second source; select and replace source."
+        ],
+        [
+          "SP-03",
+          "Exercise mute independently for source one and two."
+        ],
+        [
+          "SP-04",
+          "Change split ratio and verify preview geometry."
+        ],
+        [
+          "SP-05",
+          "Swap source positions and verify state."
+        ],
+        [
+          "SP-06",
+          "Add/navigate/remove keyframes and exercise undo/redo if supported."
+        ],
+        [
+          "SP-07",
+          "Apply split and verify actual rendered layout and audio mix."
+        ],
+        [
+          "SP-08",
+          "Validate missing/invalid second source and recovery."
+        ],
+        [
+          "SP-09",
+          "Verify remove-second-source returns to single-source state."
+        ]
+      ]
+    },
+    {
+      "id": "M07",
+      "name": "History",
+      "cases": [
+        [
+          "HI-01",
+          "Load history list and handle empty history."
+        ],
+        [
+          "HI-02",
+          "Search/filter sessions and clips."
+        ],
+        [
+          "HI-03",
+          "Refresh history and reconcile returned records."
+        ],
+        [
+          "HI-04",
+          "Open a session and inspect clip metadata."
+        ],
+        [
+          "HI-05",
+          "Preview/reveal/open an output file."
+        ],
+        [
+          "HI-06",
+          "Delete selected clips with confirmation and verify filesystem/history update."
+        ],
+        [
+          "HI-07",
+          "Delete a session with confirmation and verify safe path validation."
+        ],
+        [
+          "HI-08",
+          "Restart app and verify history remains consistent."
+        ],
+        [
+          "HI-09",
+          "Handle missing/corrupt report or media files without crashing."
+        ]
+      ]
+    },
+    {
+      "id": "M08",
+      "name": "Settings",
+      "cases": [
+        [
+          "ST-01",
+          "Load settings and verify defaults and masked secrets."
+        ],
+        [
+          "ST-02",
+          "Exercise add/test/delete lifecycle for every configured AI provider."
+        ],
+        [
+          "ST-03",
+          "Change provider models and verify model selection persistence."
+        ],
+        [
+          "ST-04",
+          "Change ASR engine and verify persisted selection after restart."
+        ],
+        [
+          "ST-05",
+          "Save settings and verify read-after-write plus restart persistence."
+        ],
+        [
+          "ST-06",
+          "Exercise cookies import/replace/clear and invalid-file handling."
+        ],
+        [
+          "ST-07",
+          "Exercise Whisper/context model status, install/remove and progress/error states."
+        ],
+        [
+          "ST-08",
+          "Exercise tracker and engine status/update/failure paths."
+        ],
+        [
+          "ST-09",
+          "Exercise Telegram configuration, test/send and clear using a safe test double."
+        ],
+        [
+          "ST-10",
+          "Exercise cache/disk usage/open/delete with bounded temporary test data."
+        ],
+        [
+          "ST-11",
+          "Exercise license status/refresh/activation validation using dedicated test license only."
+        ],
+        [
+          "ST-12",
+          "Exercise update check/download navigation without installing an uncontrolled update."
+        ]
+      ]
+    },
+    {
+      "id": "M09",
+      "name": "Output",
+      "cases": [
+        [
+          "OU-01",
+          "Open output destination and verify correct folder/session."
+        ],
+        [
+          "OU-02",
+          "Verify output action handles missing destination gracefully."
+        ],
+        [
+          "OU-03",
+          "Verify rendered file exists, is readable and has expected codec/container."
+        ],
+        [
+          "OU-04",
+          "Verify duration, dimensions, frame rate and audio stream with ffprobe."
+        ],
+        [
+          "OU-05",
+          "Decode representative frames and audio; detect truncated/corrupt output."
+        ],
+        [
+          "OU-06",
+          "Verify subtitles, titles, watermark and crop/split effects in output where enabled."
+        ],
+        [
+          "OU-07",
+          "Verify filenames and output paths are safe and do not overwrite unrelated files."
+        ]
+      ]
+    },
+    {
+      "id": "M10",
+      "name": "Help",
+      "cases": [
+        [
+          "HE-01",
+          "Open and close Help from all supported entry points."
+        ],
+        [
+          "HE-02",
+          "Exercise every help section/tab and internal navigation."
+        ],
+        [
+          "HE-03",
+          "Open external links safely and verify target URLs."
+        ],
+        [
+          "HE-04",
+          "Exercise tutorial launch/replay/close and persisted completion state."
+        ],
+        [
+          "HE-05",
+          "Verify unavailable links/media show a recoverable error."
+        ],
+        [
+          "HE-06",
+          "Verify Help navigation does not break current workspace or selected project."
+        ]
+      ]
+    }
+  ],
+  "releaseGates": [
+    "Every listed case has an explicit status; no case silently omitted.",
+    "All renderer interaction cases pass on supported macOS architectures.",
+    "All production IPC cases pass using src/preload.js and the real Electron main process.",
+    "All media cases pass with real FFmpeg/Python and ffprobe validation.",
+    "Persistence cases pass across a full app restart.",
+    "No TEMPORARY SKIP, placeholder assertion, or mock result is counted as production PASS.",
+    "Failure report identifies exact case, source file/line, layer, failure class, evidence and remediation."
+  ]
+}
