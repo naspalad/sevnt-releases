@@ -7367,3 +7367,53 @@ body.pv-playing #mainRail::after,
 body.pv-playing .tb-log-btn::after,
 body.pv-playing .panel-desc-arrow,
 body.pv-playing .gtl-tile .gtl-score-hot { animation-play-state: paused !important; }
+
+/* [QA-FIX] Select Mode actions must remain reachable after the legacy status
+   bar was visually removed from the workspace. Present only its selection
+   toolbar as a floating control while selection mode is active. */
+#statusBar.is-selecting {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 22px !important;
+  transform: translateX(-50%) !important;
+  z-index: 12000 !important;
+  display: block !important;
+  width: max-content !important;
+  max-width: calc(100vw - 32px) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  padding: 8px 12px !important;
+  margin: 0 !important;
+  border: 1px solid var(--b1) !important;
+  border-radius: 14px !important;
+  background: rgba(12, 12, 15, .96) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .42) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+}
+#statusBar.is-selecting .sbar-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 36px !important;
+}
+#statusBar.is-selecting .sbar-row > :not(#sbarSelectAct) {
+  display: none !important;
+}
+#statusBar.is-selecting #sbarSelectAct {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+#statusBar.is-selecting .sbar-prog,
+#statusBar.is-selecting #sbarFold {
+  display: none !important;
+}
+#statusBar.is-selecting .sbar-btn {
+  pointer-events: auto !important;
+  white-space: nowrap !important;
+}
