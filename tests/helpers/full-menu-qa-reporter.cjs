@@ -69,6 +69,8 @@ class FullMenuQaReporter {
       branch: this.plan.branch,
       sourcePlanStatus: this.plan.status,
       playwrightStatus: result.status,
+      environment: 'isolated-qa-harness',
+      evidenceLimit: 'This suite launches qa-electron-main.cjs with qa-preload.cjs. PASS applies only to the isolated renderer/fixture interaction layer, not production IPC, licensing, persistence, or the production media pipeline.',
       summary: {
         planned: cases.length,
         pass: cases.filter(item => item.status === 'PASS').length,
@@ -100,7 +102,7 @@ class FullMenuQaReporter {
       '|---|---|---|---|',
       ...cases.map(item => `| ${item.caseId} | ${item.menu} | ${item.status} | ${item.description.replace(/\\|/g, '\\|')} |`),
       '',
-      'A missing case is NOT_IMPLEMENTED, never PASS. Mock-preload runs are UI/fixture evidence only and do not prove production IPC or production media integration.',
+      'A missing case is NOT_IMPLEMENTED, never PASS. This report comes from the isolated qa-electron-main.cjs + qa-preload.cjs harness. It is renderer/fixture evidence only and does not prove production IPC, licensing, production persistence, or the production media pipeline.',
     ].join('\n');
     fs.writeFileSync(path.join(this.outputDir, 'full-menu-qa-report.md'), summary + '\n');
 
