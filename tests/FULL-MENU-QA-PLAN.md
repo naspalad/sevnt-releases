@@ -169,3 +169,19 @@ A static validator is provided at `tests/full-menu-qa-plan.test.js`. It checks t
 - Each failure report identifies case ID, source location, layer, failure class, evidence and remediation.
 
 **Important:** This is a coverage design and manifest, not a claim that the 87 cases have already been implemented or run. The existing QA-preload suite remains a separate isolated renderer suite.
+
+## Execution wiring (implementation in progress)
+
+The repository now has explicit commands:
+
+- `npm run test:qa:plan` validates the 10-menu / 88-case inventory.
+- `npm run test:qa:menu-coverage` runs the current isolated Playwright menu suite and writes:
+  - `test-results/full-menu-qa/full-menu-qa-report.json`
+  - `test-results/full-menu-qa/full-menu-qa-report.md`
+
+The custom reporter reads case IDs from Playwright test titles (for example `[CL-01]`). It reports every planned scenario as PASS, FAIL, SKIPPED, TIMEOUT, INTERRUPTED, or NOT_IMPLEMENTED. Missing case IDs fail the coverage command; skipped cases never count as PASS. This prevents a green result when most of the 88 scenarios have not been implemented.
+
+**Current implementation boundary:** only the explicitly tagged existing cases are counted. The current Playwright entry point still launches `tests/qa-electron-main.cjs` with `tests/qa-preload.cjs`. Its results are isolated renderer/fixture evidence only. They do not prove production IPC, the real license gate, production persistence, or the production Python/FFmpeg pipeline.
+
+**Not yet complete:** the remaining scenarios still need concrete Playwright actions/assertions, the production Electron launch path needs a dedicated valid QA license and isolated user-data directory, and production IPC/media/persistence suites must be added before the 88-case run can be considered complete. Do not add a license bypass to production code. The GitHub Actions workflow is intentionally not wired to this branch yet, so these commands are not automatically executed by the commits made during test design.
+
