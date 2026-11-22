@@ -19,12 +19,22 @@ permissions:
 
 jobs:
   production-qa:
-    name: Production integration QA (Linux)
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    name: Production integration QA (macOS ${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ARM64 Apple Silicon
+            runner: macos-15
+            expected_arch: arm64
+          - platform: Intel x64
+            runner: macos-15-intel
+            expected_arch: x64
     env:
       CI: "1"
-      SEVNT_QA_EXPECTED_ARCH: x64
+      SEVNT_QA_EXPECTED_ARCH: ${{ matrix.expected_arch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,12 +50,25 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install system test dependencies
+      - name: Install macOS test dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb ffmpeg libgtk-3-0 libnss3 libasound2t64 libxss1 libxtst6 libgbm1 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm-dev
+          brew update
+          brew install ffmpeg
+          node --version
+          python --version
+          uname -m
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
+
+      - name: Verify runner and Electron target architecture
+        run: |
+          echo "Runner architecture: $(uname -m)"
+          echo "Expected architecture: $SEVNT_QA_EXPECTED_ARCH"
+          case "$SEVNT_QA_EXPECTED_ARCH:$(uname -m)" in
+            arm64:arm64|x64:x86_64) ;;
+            *) echo "Unexpected macOS runner architecture"; exit 1 ;;
+          esac
+          node -p "'Node architecture: ' + process.arch"
 
       - name: Install Node dependencies
         run: npm ci
@@ -54,38 +77,32 @@ jobs:
         run: npm run test:qa:plan
 
       - name: Run all 88 menu scenarios (Clips, Clip, Editor, Watermark, Crop, Split, History, Settings, Output, Help)
-        run: xvfb-run -a npm run test:qa:menu-coverage
+        run: npm run test:qa:menu-coverage
 
       - name: Install Python engine dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r engine/requirements.upstream.txt
-          python --version
           python -c "import fastapi,uvicorn,pydantic,faster_whisper; print('Python engine dependencies OK')"
 
       - name: Run production IPC against real Electron Main and Preload
-        run: xvfb-run -a npm run test:qa:production-ipc
+        run: npm run test:qa:production-ipc
 
       - name: Run production FFmpeg, FFprobe and Python Engine integration
-        env:
-          SEVNT_ENGINE_PYTHON: ${{ runner.tool_cache }}/Python/3.11.*/x64/bin/python
-          SEVNT_QA_FFMPEG_BIN: /usr/bin/ffmpeg
-          SEVNT_QA_FFPROBE_BIN: /usr/bin/ffprobe
         run: |
-          PYTHON_BIN="$(python -c 'import sys; print(sys.executable)')"
-          echo "SEVNT_ENGINE_PYTHON=$PYTHON_BIN" >> "$GITHUB_ENV"
-          echo "SEVNT_QA_FFMPEG_BIN=/usr/bin/ffmpeg" >> "$GITHUB_ENV"
-          echo "SEVNT_QA_FFPROBE_BIN=/usr/bin/ffprobe" >> "$GITHUB_ENV"
+          echo "SEVNT_ENGINE_PYTHON=$(python -c 'import sys; print(sys.executable)')" >> "$GITHUB_ENV"
+          echo "SEVNT_QA_FFMPEG_BIN=$(command -v ffmpeg)" >> "$GITHUB_ENV"
+          echo "SEVNT_QA_FFPROBE_BIN=$(command -v ffprobe)" >> "$GITHUB_ENV"
           npm run test:qa:production-media
 
       - name: Run persistence across full Electron restart
-        run: xvfb-run -a npm run test:qa:production-persistence
+        run: npm run test:qa:production-persistence
 
       - name: Upload production QA evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: SEVNT-Production-Integration-QA
+          name: SEVNT-Production-Integration-QA-${{ matrix.expected_arch }}
           path: |
             test-results/
             /tmp/sevnt-production-*
