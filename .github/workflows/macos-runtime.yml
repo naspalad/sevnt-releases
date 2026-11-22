@@ -152,6 +152,11 @@ jobs:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
         run: npx playwright test tests/mac-test.spec.js --workers=1
 
+      - name: Run Master Regression Suite (10 menus)
+        id: master_regression
+        continue-on-error: true
+        run: node --test tests/master-regression-suite.test.js
+
       - name: Aggregate independent test results
         if: always()
         env:
@@ -162,6 +167,7 @@ jobs:
           FFMPEG_RUNTIME: ${{ steps.ffmpeg_runtime.outcome }}
           PYTHON_RUNTIME: ${{ steps.python_runtime.outcome }}
           PACKAGED_STARTUP: ${{ steps.packaged_startup.outcome }}
+          MASTER_REGRESSION: ${{ steps.master_regression.outcome }}
         run: |
           failed=0
           for value in \
@@ -171,7 +177,8 @@ jobs:
             "${WATERMARK_CONTRACT}" \
             "${FFMPEG_RUNTIME}" \
             "${PYTHON_RUNTIME}" \
-            "${PACKAGED_STARTUP}"; do
+            "${PACKAGED_STARTUP}" \
+            "${MASTER_REGRESSION}"; do
             echo "$value"
             if [ "$value" != "success" ]; then failed=1; fi
           done
