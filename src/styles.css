@@ -1957,7 +1957,7 @@ body.preview-maxed .inspector{visibility:hidden}
 .cs-kf-row .kf-xy{color:var(--muted);font-size:11px}
 .cs-kf-row .kf-go{margin-left:auto;background:rgba(255,255,255,.1);border:0;color:#fff;border-radius:7px;padding:3px 8px;font-size:11px;cursor:pointer}
 .cs-kf-row .kf-del{background:rgba(255,92,77,.18);border:0;color:var(--danger);border-radius:7px;padding:3px 8px;font-size:11px;cursor:pointer}
-.cs-status{font-size:11px;color:var(--lime);min-height:15px}
+.cs-status{font-size:11px;color:var(--lime);min-height:15px};pointer-events:none
 
 /* ── Viral hook cards (review overlay) ──────────────── */
 /* [HOOK-ROW] One row that scrolls sideways, so a screen holds every clip. */
