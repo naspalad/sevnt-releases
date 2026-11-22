@@ -156,7 +156,7 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('.sv-jump button[data-tab="license"]').click();
     await expect(page.locator('#sv_secLicense')).toBeVisible();
     await page.locator('#sv_licRefresh').click();
-    await expect.poll(async () => (await calls()).some(x => x.name === 'sevnt.licenseStatus')).toBe(true);
+    await expect.poll(async () => (await calls()).some(x => x.name === 'getLicense')).toBe(true);
     // License activation is intentionally not attempted by this suite.
   });
 
@@ -217,6 +217,8 @@ test.describe('SEVNT menu interaction regression (isolated QA bridge)', () => {
     await page.locator('#openEditorBtn').click();
     await expect(page.locator('#captionStudio')).toBeVisible();
     await expect(page.locator('#captionStudioBody')).not.toBeEmpty();
+    await page.locator('#ce_tabs button[data-tab="style"]').click();
+    await expect(page.locator('#ce_case')).toBeVisible();
 
     await page.locator('#ce_case button[data-v="upper"]').click();
     await expect(page.locator('#ce_case button[data-v="upper"]')).toHaveClass(/active/);
