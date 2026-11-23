@@ -203,9 +203,11 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
       await expect(page.locator(id)).toBeAttached();
     }
 
-    // CP-02: use the actual Source chip -> popover interaction. The option buttons
-    // live inside a closed body-level popover and must not be clicked programmatically
-    // while hidden (that bypasses the UI interaction the user actually performs).
+    // CP-02: Source mode and manual segments are intentionally placed in the
+    // source panel's quick chips. That panel is hidden on the Clip settings page,
+    // so navigate to the Clips page before using the real visible chip/popover UI.
+    await page.locator('#railClipsBtn').click();
+    await expect(page.locator('#spQuick')).toBeVisible();
     await page.locator('#spQuick .sp-chip-btn').first().click();
     await expect(page.locator('#f_clipMode button[data-v="manual"]')).toBeVisible();
     await page.locator('#f_clipMode button[data-v="manual"]').click();
@@ -218,17 +220,26 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#f_msAdd').click();
     await expect(page.locator('#f_msRows .ms-row')).toHaveCount(2);
 
-    // CP-03: restore Auto because pure Manual mode intentionally hides AI duration.
-    // Then open the Duration chip before selecting its Manual duration option.
+    // Return to Clip settings for its controls. Auto mode is restored through
+    // the source quick chip because the source-mode control lives on the Clips page.
+    await page.locator('.rail-btn[data-panel="clip"]').click();
+    await expect(page.locator('#panelTitle')).toContainText(/clip/i);
+    await page.locator('#railClipsBtn').click();
     await page.locator('#spQuick .sp-chip-btn').first().click();
     await expect(page.locator('#f_clipMode button[data-v="auto"]')).toBeVisible();
     await page.locator('#f_clipMode button[data-v="auto"]').click();
+
+    // CP-03: test Clip settings controls on their visible settings page.
+    await page.locator('.rail-btn[data-panel="clip"]').click();
     await page.locator('#f_fastQ').check({ force: true });
     await page.locator('#f_burnQ').check({ force: true });
     await page.locator('#f_smartQ').check({ force: true });
     await page.locator('#f_subtitleLang').selectOption('id');
     await page.locator('#f_format button[data-v="square"]').evaluate(button => button.click());
     await page.locator('#f_resolution button[data-v="1080p"]').evaluate(button => button.click());
+
+    // Duration is another source quick chip, so exercise it on the Clips page.
+    await page.locator('#railClipsBtn').click();
     await page.locator('#spQuick .sp-chip-btn').nth(2).click();
     await expect(page.locator('#f_clipDuration button[data-v="manual"]')).toBeVisible();
     await page.locator('#f_clipDuration button[data-v="manual"]').click();
@@ -238,6 +249,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     const durationValue = Number(await page.locator('#f_clipDurationSec').inputValue());
     expect(Number.isFinite(durationValue)).toBe(true);
     expect(durationValue).toBeLessThan(99999);
+
+    // Continue Clip-page assertions from the actual Clip settings screen.
+    await page.locator('.rail-btn[data-panel="clip"]').click();
     await expect(page.locator('#f_fastQ')).toBeChecked();
     await expect(page.locator('#f_burnQ')).toBeChecked();
 
