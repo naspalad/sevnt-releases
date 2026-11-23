@@ -93,12 +93,31 @@ jobs:
             npm run build:mac:x64
           fi
 
+      - name: Reset QA license device slot
+        # GitHub Actions runners are ephemeral: every run gets a new machine_id,
+        # so the GAS backend's one-device-per-license PRIMARY_LAPTOP slot fills
+        # up and permanently rejects activation ("DEVICE_SLOT_OCCUPIED...") after
+        # the first run. Free the slot before each activation attempt instead of
+        # weakening that rule for real users.
+        # Non-fatal: if SEVNT_LICENSE_ADMIN_SECRET isn't set yet (repo secret),
+        # this step fails but the job continues — same SLOT_OCCUPIED behavior
+        # as before this fix, not a new hard failure, until the secret is added.
+        continue-on-error: true
+        env:
+          SEVNT_QA_LICENSE_KEY: ${{ matrix.arch == 'arm64' && secrets.SEVNT_QA_ARM64_KEY || secrets.SEVNT_QA_INTEL_KEY }}
+          SEVNT_LICENSE_ADMIN_SECRET: ${{ secrets.SEVNT_LICENSE_ADMIN_SECRET }}
+        run: |
+          test -n "$SEVNT_LICENSE_ADMIN_SECRET"
+          curl -sS -f -X POST "https://script.google.com/macros/s/AKfycbxaN2QJsscNRX7JY-Txf_GlT_cVV6KqddkB6dDhI6NtzP5lrh5yG-EquT3SPrY-D9OhXA/exec" \
+            -H "Content-Type: application/json" \
+            -d "{\"action\":\"admin_reset_license_devices\",\"license_key\":\"$SEVNT_QA_LICENSE_KEY\",\"admin_secret\":\"$SEVNT_LICENSE_ADMIN_SECRET\",\"reason\":\"ci_reset\"}"
+
       - name: Test macOS App UI & Runtime
         env:
           SEVNT_QA_EXPECTED_ARCH: ${{ matrix.arch }}
           SEVNT_QA_EMAIL: ${{ matrix.arch == 'arm64' && secrets.SEVNT_QA_ARM64_EMAIL || secrets.SEVNT_QA_INTEL_EMAIL }}
           SEVNT_QA_LICENSE_KEY: ${{ matrix.arch == 'arm64' && secrets.SEVNT_QA_ARM64_KEY || secrets.SEVNT_QA_INTEL_KEY }}
-        run: npx playwright test tests/mac-test.spec.js tests/macos-qa/license.spec.js
+        run: npx playwright test tests/mac-test.spec.js tests/macos-qa/license.spec.js --workers=1
 
       - name: Collect SEVNT Startup Trace
         if: always()
