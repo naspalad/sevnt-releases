@@ -169,7 +169,9 @@ const socl = {
   saveClipEdits: asyncResult('saveClipEdits', { ok: true }),
   cancel: asyncResult('cancel', { ok: true }),
   getSettings: asyncResult('getSettings', () => ({ ...qaSettings })),
-  setSettings: asyncResult('setSettings', (args) => { qaSettings = { ...qaSettings, ...(args[0] || {}) }; return { ...qaSettings }; }),
+  // asyncResult spreads args into value(...args), so this fn's own parameter
+  // IS the settings object renderer.js passed — not an args array to index.
+  setSettings: asyncResult('setSettings', (settings) => { qaSettings = { ...qaSettings, ...(settings || {}) }; return { ...qaSettings }; }),
   testProvider: asyncResult('testProvider', { ok: true }),
   secretsAvailable: asyncResult('secretsAvailable', []),
   secretsDiagnose: asyncResult('secretsDiagnose', {}),
@@ -196,14 +198,31 @@ const socl = {
     deleteAsset: asyncResult('watermark.deleteAsset', { ok: true }),
   },
   history: {
-    inspect: asyncResult('history.inspect', (payload) => Object.fromEntries((payload.sessions || []).map(session => [session.dir, { exists: true, clips: { 0: { exists: true, file: qaVideo, size: fs.statSync(qaVideo).size } } }]))),
+    // renderer.js calls window.socl.history.inspect(sessionsArray) directly —
+    // the real preload.js wraps that into { sessions: [...] } before the IPC
+    // call, but this mock stands in for the whole history.inspect function,
+    // so it receives the bare array, not a { sessions } envelope.
+    inspect: asyncResult('history.inspect', (sessions) => Object.fromEntries((sessions || []).map(session => [session.dir, { exists: true, clips: { 0: { exists: true, file: qaVideo, size: fs.statSync(qaVideo).size } } }]))),
     stat: asyncResult('history.stat', {}),
     trashClips: asyncResult('history.trashClips', { ok: true }),
     trashSession: asyncResult('history.trashSession', { ok: true }),
   },
   telegram: { status: asyncResult('telegram.status', {}), save: asyncResult('telegram.save', { ok: true }), clear: asyncResult('telegram.clear', { ok: true }), send: asyncResult('telegram.send', { ok: true }), onProgress: subscribe('telegramProgress') },
-  whisper: { status: asyncResult('whisper.status', { installed: false }), ensure: asyncResult('whisper.ensure', { ok: true }), remove: asyncResult('whisper.remove', { ok: true }), onProgress: subscribe('whisperProgress') },
-  ctxModel: { status: asyncResult('ctxModel.status', { installed: false }), ensure: asyncResult('ctxModel.ensure', { ok: true }), remove: asyncResult('ctxModel.remove', { ok: true }), onProgress: subscribe('ctxModelProgress') },
+  // renderer.js's wireOfflineAsrPanel()/wireContextModelPanel() hide every
+  // button whenever st.supported is falsy ("not available on this platform")
+  // — { installed: false } alone left both Download buttons permanently
+  // hidden since `supported` was always undefined.
+  whisper: {
+    status: asyncResult('whisper.status', (size) => ({
+      supported: true, platform: process.platform, sizeMB: 150, binary: false,
+      model: size || 'small', models: [{ id: size || 'small', label: size || 'small', installed: false }],
+    })),
+    ensure: asyncResult('whisper.ensure', { ok: true }), remove: asyncResult('whisper.remove', { ok: true }), onProgress: subscribe('whisperProgress'),
+  },
+  ctxModel: {
+    status: asyncResult('ctxModel.status', { supported: true, platform: process.platform, sizeMB: 300, installed: false }),
+    ensure: asyncResult('ctxModel.ensure', { ok: true }), remove: asyncResult('ctxModel.remove', { ok: true }), onProgress: subscribe('ctxModelProgress'),
+  },
   engines: { status: asyncResult('engines.status', {}), update: asyncResult('engines.update', { ok: true }), fixYoutube: asyncResult('engines.fixYoutube', { ok: true }), onProgress: subscribe('engineProgress') },
   tracker: { isInstalled: asyncResult('tracker.isInstalled', false), ready: asyncResult('tracker.ready', false), platform: asyncResult('tracker.platform', process.platform), version: asyncResult('tracker.version', null), ensure: asyncResult('tracker.ensure', { ok: true }), remove: asyncResult('tracker.remove', { ok: true }), onProgress: subscribe('trackerProgress') },
   mobile: { start: asyncResult('mobile.start', { ok: true }), stop: asyncResult('mobile.stop', { ok: true }), status: asyncResult('mobile.status', { running: false, connected: false }), getPairingUrl: asyncResult('mobile.getPairingUrl', null), generateQr: asyncResult('mobile.generateQr', ''), approve: asyncResult('mobile.approve', { ok: true }), reject: asyncResult('mobile.reject', { ok: true }), syncProjects: asyncResult('mobile.syncProjects', { ok: true }), syncStatus: asyncResult('mobile.syncStatus', { ok: true }), syncClips: asyncResult('mobile.syncClips', { ok: true }), syncHistory: asyncResult('mobile.syncHistory', { ok: true }), syncSettings: asyncResult('mobile.syncSettings', { ok: true }), onRemote: subscribe('mobileRemote'), onPairRequest: subscribe('mobilePairRequest'), onConnected: subscribe('mobileConnected'), onDisconnected: subscribe('mobileDisconnected') },

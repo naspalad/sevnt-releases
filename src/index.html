@@ -1782,6 +1782,11 @@
       if (!helpBtn || !helpView) return;
 
       function openHelp() {
+        // #helpBtn has its own listener here, separate from renderer.js's
+        // els.rail.forEach (which already hides #settingsView for every
+        // other rail panel) — without this, Settings stayed on top of Help.
+        var sv = document.getElementById('settingsView');
+        if (sv) sv.hidden = true;
         helpView.hidden = false;
         helpBtn.classList.add('active');
         document.querySelectorAll('.rail-btn[data-panel]').forEach(function (b) { b.classList.remove('active'); });

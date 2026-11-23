@@ -229,11 +229,27 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('#f_clipMode button[data-v="auto"]')).toBeVisible();
     await page.locator('#f_clipMode button[data-v="auto"]').click();
 
+    // Smart Face Tracking is one of the SP-QUICK fields (src/renderer.js:7090):
+    // every Clip-panel render moves it into #spQuick on the Clips page, same as
+    // clip mode/duration above. Check it here, while it's still live, not after
+    // navigating back to the Clip settings page where it no longer lives. Its
+    // switch icon is deliberately display:none in the compact chip row
+    // (styles.css #spQuick .ap-toggle-card .ap-switch), so click the label —
+    // the native for= forwarding still toggles the hidden input, same as a
+    // real user clicking the "Smart Face Tracking" chip text would.
+    await page.locator('label[for="f_smartQ"]').click();
+    // First-time toggle opens the "Pasang Smart Face Tracking" install prompt
+    // (renderer.js:7704, promptInstallTracker). The QA preload mocks
+    // tracker.ensure() to resolve { ok: true } immediately (tests/qa-preload.cjs),
+    // so install here is instant and never touches the network.
+    await page.locator('#trk_install').click();
+    await expect(page.locator('.tg-overlay')).toBeHidden();
+    await expect(page.locator('#f_smartQ')).toBeChecked();
+
     // CP-03: test Clip settings controls on their visible settings page.
     await page.locator('.rail-btn[data-panel="clip"]').click();
     await page.locator('#f_fastQ').check({ force: true });
     await page.locator('#f_burnQ').check({ force: true });
-    await page.locator('#f_smartQ').check({ force: true });
     await page.locator('#f_subtitleLang').selectOption('id');
     await page.locator('#f_format button[data-v="square"]').evaluate(button => button.click());
     await page.locator('#f_resolution button[data-v="1080p"]').evaluate(button => button.click());
@@ -275,6 +291,15 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect.poll(() => count('renderEdit'), { timeout: 30000 }).toBe(before + 1);
 
     // CP-08: contradictory manual start/end must be surfaced as invalid, not accepted as a valid segment.
+    // #f_msRows only renders while clip mode is 'manual' (applyClipMode() hides
+    // #f_manualWrap in 'auto'), and clip mode was switched back to 'auto' for
+    // CP-03..CP-07 above — switch back to manual via the same Clips-page quick
+    // chip CP-02 used, instead of hitting a non-existent/hidden locator.
+    await page.locator('#railClipsBtn').click();
+    await page.locator('#spQuick .sp-chip-btn').first().click();
+    await expect(page.locator('#f_clipMode button[data-v="manual"]')).toBeVisible();
+    await page.locator('#f_clipMode button[data-v="manual"]').click();
+    await expect(page.locator('#f_manualWrap')).toBeVisible();
     const lastSegment = page.locator('#f_msRows .ms-row').last();
     await lastSegment.locator('input[data-k="start"]').fill('00:40');
     await lastSegment.locator('input[data-k="end"]').fill('00:20');
@@ -290,7 +315,12 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
   test('[ED-01, ED-02, ED-03, ED-04, ED-05, ED-06, ED-07, ED-08, ED-09] Editor — caption text/timing, typography, animation, titles, manual captions, undo/redo, preview, render and reopen', async () => {
     await openEditor();
     await expect(page.locator('#ce_tabs')).toBeVisible();
-    await expect(page.locator('#ceGutterCues')).toBeVisible();
+    // transcript-layout.js rebuilds the editor into the newer transcript-first
+    // layout shortly after it opens (adds .tx-layout to .cap-editor), which
+    // deliberately hides the legacy #ceGutterCues side list (styles.css
+    // `.tx-layout .cap-gutter{display:none}`) in favour of the .tx-col panel.
+    // Wait for that rebuild instead of asserting the now-superseded gutter.
+    await expect(page.locator('.tx-col')).toBeVisible();
 
     // ED-02: cue list, per-word text edit and global subtitle timing shift.
     await page.locator('#ce_tabs button[data-tab="words"]').click();
@@ -298,7 +328,11 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('#pw_words .pw-word').first()).toBeVisible();
     await page.locator('#pw_words .pw-word').first().click();
     await page.locator('#pw_text').fill('SEVNT_EDITED');
-    await page.locator('#pw_bold').click();
+    // transcript-layout.js hides the real #pw_bold (display:none) and replaces
+    // it with "Normal"/"Bold" text buttons that forward to it programmatically
+    // (ctl.pw_bold.click()) — click the visible proxy, assert the real control.
+    await page.locator('.tx-case-row button:text-is("Bold")').click();
+    await expect(page.locator('#pw_bold')).toHaveClass(/on/);
     await page.locator('#pw_ital').click();
     await page.locator('#pw_color').fill('#ff0000');
     await page.locator('#pw_size').fill('80');
@@ -403,6 +437,11 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect.poll(() => page.locator('.wm-badge').count(), { timeout: 15000 }).toBeGreaterThan(0);
 
     // WM-09: per-clip override badge toggles OFF and returns to project default on the next click.
+    // .wm-badge lives in the gallery tiles on the Clips page, not the
+    // Watermark settings panel we've been on since line 402 — it exists in
+    // the DOM count check above regardless of active panel, but is only
+    // actually visible once the Clips page is showing again.
+    await page.locator('#railClipsBtn').click();
     const wmBadge = page.locator('.wm-badge').first();
     await expect(wmBadge).toBeVisible();
     await wmBadge.click();
@@ -411,6 +450,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect(page.locator('.wm-badge').first()).not.toHaveClass(/wm-off/);
 
     // WM-06: delete stored image asset and clear configured image.
+    // Back to the Watermark settings panel — WM-09 above moved to the Clips
+    // page to reach the gallery badge.
+    await openPanel('watermark');
     await expect(page.locator('#wm_remove')).toBeVisible();
     await page.locator('#wm_remove').click();
     await expect.poll(() => count('watermark.deleteAsset'), { timeout: 15000 }).toBeGreaterThan(0);
@@ -436,6 +478,10 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await openPanel('crop');
     await expect(page.locator('#openCropStudioBtn')).toBeDisabled();
     await expect(page.locator('#openGamingSplitStudioBtn')).toBeDisabled();
+    // seedClips() needs the Clips page's own import controls (#pickVideo);
+    // the 'crop' panel opened above to check the disabled gate navigated away
+    // from it.
+    await page.locator('#railClipsBtn').click();
     await seedClips();
     await openPanel('crop');
     await page.locator('#openCropStudioBtn').click();
@@ -463,7 +509,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // CR-04: keyframe add, navigate, remove.
     await page.locator('#csAddKf').click();
     await expect(page.locator('#csKfCount')).toContainText('1');
-    if (await page.locator('#csKfList button').count()) await page.locator('#csKfList button').first().click();
+    // force: true — the preceding drag (mouse.move/up above) leaves the
+    // crop-box drag layer briefly overlapping the keyframe list panel.
+    if (await page.locator('#csKfList button').count()) await page.locator('#csKfList button').first().click({ force: true });
     await page.locator('#csDelKf').click();
 
     // CR-05: undo/redo/reset.
@@ -480,14 +528,23 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
       (await calls()).filter(item => item.name === 'renderEdit').length > beforeEdit, { timeout: 90000 }).toBe(true);
 
     // CR-07 / CR-08: preview source/output and verify generated media when the renderer returns an artifact.
-    await expect(page.locator('#csVideo')).toBeVisible();
+    // For a previewOnly fixture clip, #csRender takes the "Apply" branch
+    // (renderer.js ~4980: saves framing, no ffmpeg burn) and self-closes the
+    // studio ~600ms later (setTimeout(close)) — #csVideo only stays visible
+    // when that branch isn't taken. Wait past that timer so this isn't a
+    // race, then check the studio's own open/closed state rather than
+    // asserting a video element that may legitimately be gone.
+    await page.waitForTimeout(700);
+    if (await page.locator('#cropStudio').isVisible()) {
+      await expect(page.locator('#csVideo')).toBeVisible();
+    }
     const mediaOutputs = (await calls()).filter(item => item.name === 'ffmpegRender')
       .map(item => item.value && item.value.output).filter(Boolean);
     const cropOutput = mediaOutputs[mediaOutputs.length - 1];
     if (cropOutput && fs.existsSync(cropOutput)) {
       expect(ffprobe(cropOutput).streams.some(stream => stream.codec_type === 'video')).toBe(true);
     }
-    await page.locator('#csClose').click();
+    if (await page.locator('#csClose').isVisible()) await page.locator('#csClose').click();
     await expect(page.locator('#cropStudio')).toBeHidden();
   });
 
@@ -557,7 +614,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // HI-04 / HI-05: open the seeded QA session, inspect the clip and play its preview.
     const rows = page.locator('#hpList .pj-row');
     await expect(rows).toHaveCount(1);
-    await rows.first().locator('[data-act="open"]').click();
+    // Both the row-info div and the "Open" button carry data-act="open" —
+    // target the button specifically to avoid a strict-mode double match.
+    await rows.first().locator('button[data-act="open"]').click();
     await expect(page.locator('#hpPanel')).toBeVisible();
     await expect(page.locator('#hpPanel .pj-clip-card')).toHaveCount(1);
     await page.locator('#hpPanel [data-act="folder"]').click();
@@ -630,6 +689,10 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     expect(await count('getSettings')).toBeGreaterThan(0);
 
     // ST-06: import and clear cookies through the visible drop-zone; QA bridge stores no real cookies.
+    // Settings is tabbed (renderer.js:6848 [SV-TABS]); #sv_cookieDrop lives in
+    // the #sv_secCookies card (data-sv-tab="cookies"), not the default "byok"
+    // tab ST-01/ST-02 above were on.
+    await page.locator('.sv-jump button[data-tab="cookies"]').click();
     await expect(page.locator('#sv_cookieDrop')).toBeVisible();
     await page.locator('#sv_cookieDrop').click();
     await expect.poll(() => count('setCookies'), { timeout: 15000 }).toBeGreaterThan(0);
@@ -641,13 +704,22 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await openPanel('clip');
     await expect(page.locator('#f_asrInstall')).toBeAttached();
     await expect(page.locator('#f_ctxInstall')).toBeAttached();
+    // [CLIP-ACCORDION] (renderer.js:6965) collapses any .field whose label
+    // doesn't match OPEN_BY_DEFAULT — both #f_asrBox ("Caption offline") and
+    // #f_ctxBox start closed, so their buttons are attached but not visible
+    // until their header is clicked open.
+    await page.locator('#f_asrBox > label').click();
     await page.locator('#f_asrInstall').click();
     await expect.poll(() => count('whisper.ensure'), { timeout: 20000 }).toBeGreaterThan(0);
+    await page.locator('#f_ctxBox > label').click();
     await page.locator('#f_ctxInstall').click();
     await expect.poll(() => count('ctxModel.ensure'), { timeout: 20000 }).toBeGreaterThan(0);
 
     // ST-08: tracker/engine status and update/fix paths.
+    // #sv_secEngines is data-sv-tab="mesin" — Settings remembers the last tab
+    // (localStorage 'sevnt.settingsTab'), which is "cookies" from ST-06 above.
     await openPanel('settings');
+    await page.locator('.sv-jump button[data-tab="mesin"]').click();
     await page.locator('#sv_enginesCheck').click();
     await expect.poll(() => count('engines.status'), { timeout: 20000 }).toBeGreaterThan(0);
     await page.locator('#sv_fixYoutube').click();
@@ -687,6 +759,9 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await expect.poll(() => count('getLicense'), { timeout: 20000 }).toBeGreaterThan(0);
 
     // ST-12: update check without download/install.
+    // #sv_checkUpdateBtn is in the About card, data-sv-tab="update" — ST-11
+    // above left the tab on "license".
+    await page.locator('.sv-jump button[data-tab="update"]').click();
     await page.locator('#sv_checkUpdateBtn').click();
     await expect.poll(() => count('checkUpdate'), { timeout: 20000 }).toBeGreaterThan(0);
   });

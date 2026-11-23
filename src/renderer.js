@@ -1156,8 +1156,9 @@ function renderClipPanel() {
     msCountEl.textContent = bad ? `· ${valid} valid, ${bad} error` : `· ${valid} valid`;
     msCountEl.className = 'ms-count' + (bad ? ' bad' : valid ? ' ok' : '');
     // Re-bind (innerHTML replaced the nodes). Input edits do NOT re-render the
-    // whole list — that would kill focus mid-typing; only the row's own status
-    // line is refreshed, and a full re-render happens on blur.
+    // whole list — that would kill focus mid-typing (or mid-edit on a sibling
+    // field); every status refresh, on input AND on blur, is the in-place
+    // msRefreshStatus() below.
     msRowsEl.querySelectorAll('.ms-row input').forEach(inp => {
       inp.addEventListener('input', () => {
         const i = +inp.closest('.ms-row').dataset.i;
@@ -1166,7 +1167,13 @@ function renderClipPanel() {
         msSave(segs2);
         msRefreshStatus();
       });
-      inp.addEventListener('blur', renderManualRows);
+      // Was renderManualRows (full rebuild): blurring the START field by
+      // tabbing/clicking into END in the SAME row destroyed and recreated
+      // every input mid-interaction, so a fill() already in flight on END
+      // landed on the detached old node and was silently lost ([MS-BLUR-RACE]).
+      // msRefreshStatus mutates the existing nodes instead, so no sibling
+      // input is ever torn out from under an in-progress edit.
+      inp.addEventListener('blur', msRefreshStatus);
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
     });
     msRowsEl.querySelectorAll('.ms-del').forEach(btn => {
@@ -1179,12 +1186,27 @@ function renderClipPanel() {
       });
     });
   }
-  // Cheap in-place status update while typing (no DOM rebuild → focus is safe).
+  // In-place status update (no DOM rebuild → never tears out a focused
+  // sibling input). Also syncs the per-row error/length detail line, so this
+  // is now the only status refresh the row inputs need (typing or blur).
   function msRefreshStatus() {
     const segs = msSegs();
     msRowsEl.querySelectorAll('.ms-row').forEach(row => {
       const r = msRowState(segs[+row.dataset.i]);
       row.className = 'ms-row ' + r.state;
+      let detail = row.querySelector('.ms-err, .ms-ok');
+      const wantClass = r.state === 'bad' ? 'ms-err' : r.state === 'ok' ? 'ms-ok' : null;
+      if (!wantClass) {
+        if (detail) detail.remove();
+        return;
+      }
+      if (!detail || detail.className !== wantClass) {
+        if (detail) detail.remove();
+        detail = document.createElement('div');
+        detail.className = wantClass;
+        row.appendChild(detail);
+      }
+      detail.textContent = wantClass === 'ms-err' ? r.reason : msFmtLen(r.len);
     });
     const valid = segs.filter(s => msRowState(s).state === 'ok').length;
     const bad   = segs.filter(s => msRowState(s).state === 'bad').length;
@@ -6808,6 +6830,11 @@ async function openSettings() {
 els.rail.forEach(b => b.addEventListener('click', () => {
   const p = b.dataset.panel;
   if (p !== 'history') { try { hideHistoryPage(); } catch {} }   // History is a page: any other rail page replaces it
+  // Settings is also a full page (#settingsView), shown via openSettings()
+  // below — but unlike History it was never hidden when another rail button
+  // was clicked directly (only its own #svClose/Esc did that), so it stayed
+  // on screen intercepting clicks on whatever page came next.
+  if (p !== 'settings') { const sv = document.getElementById('settingsView'); if (sv) sv.hidden = true; }
   if (p === 'crop') {
     setActiveRail('crop');
     state.activePanel = 'crop';

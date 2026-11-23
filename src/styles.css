@@ -2090,7 +2090,10 @@ body.preview-maxed .inspector{visibility:hidden}
    Full-screen overlay. Section marker at top (04 / SETTINGS · App settings ·
    crumbs), then a plain header with title + close, then 2-col body. */
 .settings-view{
-  position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;
+  /* [SETTINGS-RAIL-CLICKTHROUGH] inset:0 used to cover the rail itself, so
+     once Settings was open no other rail button could be clicked at all —
+     match .hp-page's pattern (History) of starting past the rail instead. */
+  position:fixed;left:var(--rail-w,62px);right:0;top:0;bottom:0;z-index:60;display:flex;flex-direction:column;
   background:
     radial-gradient(60% 45% at 85% -5%,rgba(232,25,44,.06),transparent 60%),
     radial-gradient(50% 40% at -5% 100%,rgba(232,25,44,.04),transparent 60%),

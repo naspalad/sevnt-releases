@@ -50,28 +50,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install macOS test dependencies
+      - name: Report runner versions
         run: |
-          brew update
-          brew install ffmpeg
           node --version
           python --version
           uname -m
-          ffmpeg -version | head -n 1
-          ffprobe -version | head -n 1
-
-      # The renderer QA harness uses real FFmpeg fixtures. Export the Homebrew
-      # binaries before running the menu suite (not only before production-media).
-      - name: Configure FFmpeg for all QA tests
-        run: |
-          FFMPEG_BIN="$(command -v ffmpeg)"
-          FFPROBE_BIN="$(command -v ffprobe)"
-          test -x "$FFMPEG_BIN"
-          test -x "$FFPROBE_BIN"
-          echo "SEVNT_QA_FFMPEG_BIN=$FFMPEG_BIN" >> "$GITHUB_ENV"
-          echo "SEVNT_QA_FFPROBE_BIN=$FFPROBE_BIN" >> "$GITHUB_ENV"
-          echo "Configured FFmpeg: $FFMPEG_BIN"
-          echo "Configured FFprobe: $FFPROBE_BIN"
 
       - name: Verify runner and Electron target architecture
         run: |
@@ -85,6 +68,17 @@ jobs:
 
       - name: Install Node dependencies
         run: npm ci
+
+      - name: Verify bundled FFmpeg/FFprobe resolve
+        # Every QA test file already falls back to these npm-installed binaries
+        # when SEVNT_QA_FFMPEG_BIN/SEVNT_QA_FFPROBE_BIN are unset — the same
+        # pair production ships to users (see src/sevnt-engine.js). No Homebrew
+        # ffmpeg needed: on Intel, `brew install ffmpeg` now compiles from
+        # source (Homebrew dropped Intel bottles) and blew through this job's
+        # 60-minute timeout on every run.
+        run: |
+          node -e "const p=require('ffmpeg-static'); require('node:fs').accessSync(p, require('node:fs').constants.X_OK); console.log('ffmpeg-static:', p)"
+          node -e "const p=require('@ffprobe-installer/ffprobe').path; require('node:fs').accessSync(p, require('node:fs').constants.X_OK); console.log('ffprobe-installer:', p)"
 
       - name: Validate full-menu QA plan
         run: npm run test:qa:plan
