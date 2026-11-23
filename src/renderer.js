@@ -1095,10 +1095,17 @@ function renderClipPanel() {
   // so "N valid" is honest before the user hits Run.
   const MS_TC = /^\s*(?:\d+:)?(?:\d+:)?\d+(?:[.,]\d+)?\s*$/;
   const msToSec = t => {
-    const s = String(t).trim();
-    const m = /^(?:(\d+):)?(\d+):(\d+(?:[.,]\d+)?)$/.exec(s);
-    if (!m) return parseFloat(s.replace(',', '.'));
-    return (+m[1] || 0) * 3600 + (+m[2]) * 60 + parseFloat(String(m[3]).replace(',', '.'));
+    const s = String(t).trim().replace(',', '.');
+    const parts = s.split(':');
+    // Manual inputs accept MM:SS as shown by the UI placeholder, as well as
+    // HH:MM:SS. Keep this conversion aligned with pipeline toSeconds().
+    if (parts.length === 2) {
+      return Number(parts[0]) * 60 + Number(parts[1]);
+    }
+    if (parts.length === 3) {
+      return Number(parts[0]) * 3600 + Number(parts[1]) * 60 + Number(parts[2]);
+    }
+    return Number(s);
   };
   // Same normalisation as normTimecode() in pipeline-inverse-v1.js.
   const msNorm = v => String(v ?? '')
