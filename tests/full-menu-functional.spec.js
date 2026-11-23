@@ -444,9 +444,13 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     await page.locator('#railClipsBtn').click();
     const wmBadge = page.locator('.wm-badge').first();
     await expect(wmBadge).toBeVisible();
-    await wmBadge.click();
+    // force: true — on macOS CI this absolutely-positioned badge (z-index:3,
+    // over the gallery tile's video/image) reports visible/stable but the
+    // hit-test still lands on an ancestor (<main class="workspace">), the
+    // same benign Chromium paint-order flake as the CR-04 keyframe fix above.
+    await wmBadge.click({ force: true });
     await expect(page.locator('.wm-badge').first()).toHaveClass(/wm-off/);
-    await page.locator('.wm-badge').first().click();
+    await page.locator('.wm-badge').first().click({ force: true });
     await expect(page.locator('.wm-badge').first()).not.toHaveClass(/wm-off/);
 
     // WM-06: delete stored image asset and clear configured image.
@@ -587,6 +591,17 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     const before = await count('applyCrop');
     await page.locator('#ssApply').click();
     await expect.poll(() => count('applyCrop'), { timeout: 90000 }).toBeGreaterThan(before);
+
+    // Same previewOnly "Apply" branch as Crop Studio (renderer.js:13630):
+    // saves splitPending and self-closes the studio ~600ms later. Reopening
+    // restores file2 from clip.splitPending.splitCrop (renderer.js:13070), so
+    // SP-08/SP-09 still get a real, meaningful two-source state to test.
+    await page.waitForTimeout(700);
+    if (await page.locator('#splitStudio').isHidden()) {
+      await openPanel('crop');
+      await page.locator('#openGamingSplitStudioBtn').click();
+      await expect(page.locator('#splitStudio')).toBeVisible();
+    }
 
     // SP-08 / SP-09: removing source two recovers to a single-source state.
     await page.locator('#ssRemoveV2').click();
