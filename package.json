@@ -1,7 +1,7 @@
 {
   "name": "sevnt-studio",
   "productName": "SEVNT Studio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "SEVNT Studio — Electron desktop app for AI-driven short-form clipping (yt-dlp + ffmpeg + LLM hook titles).",
   "main": "sevnt-main.js",
   "author": "Seventy",

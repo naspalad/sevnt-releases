@@ -838,7 +838,7 @@ function renderClipPanel() {
          pulled for landing on the captions). The cards are the same
          hookPresetSample() miniatures the Titles panel shows. -->
     <div class="field">
-      <label>Hook judul di video <span style="color:var(--muted);font-weight:500;font-size:11px">· judul AI tampil 3,5 detik pertama</span></label>
+      <label>Hook judul di video <span style="color:var(--muted);font-weight:500;font-size:11px">· judul AI tampil di awal klip, caption disembunyikan</span></label>
       <div class="chip-grid" id="f_hook">
         <button data-v="on"  class="${c.hookAutoBurn?'active':''}">ON</button>
         <button data-v="off" class="${!c.hookAutoBurn?'active':''}">OFF</button>
@@ -855,6 +855,10 @@ function renderClipPanel() {
         <div style="margin-top:8px;font-size:11px;color:var(--muted)">Huruf hook</div>
         <div class="chip-grid" id="f_hookCase" style="margin-top:4px">
           ${[['', 'Ikut gaya'], ['upper', 'KAPITAL'], ['title', 'Judul'], ['lower', 'kecil']].map(([v, l]) => `<button type="button" data-case="${v}" class="${(c.hookCase || '') === v ? 'active' : ''}">${l}</button>`).join('')}
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted)">Lama hook tampil (detik)</div>
+        <div class="chip-grid" id="f_hookSec" style="margin-top:4px">
+          ${[2, 2.5, 3, 3.5, 4, 5, 6].map(v => `<button type="button" data-v="${v}" class="${(+c.hookSec || 3.5) === v ? 'active' : ''}">${String(v).replace('.', ',')}</button>`).join('')}
         </div>
         <div style="margin-top:6px;font-size:11px;color:var(--muted);line-height:1.5">Posisi otomatis menjauhi caption. Burn subtitle ON: langsung terbakar ke video. OFF: tampil di preview dan ikut terbakar saat klip dirender. Teks &amp; gaya bisa diubah per klip di Caption Editor → Titles.</div>
       </div>
@@ -1383,16 +1387,25 @@ function renderClipPanel() {
     const pick = document.getElementById('f_hookPick');
     if (pick) pick.hidden = !on;
     await saveCfg({ hookAutoBurn: on });
+    refreshHookPreview(on);   // [HOOK-PREVIEW]
   }));
   document.querySelectorAll('#f_hookPick .f_hookPreset').forEach(b => b.addEventListener('click', async () => {
     document.querySelectorAll('#f_hookPick .f_hookPreset').forEach(x => { x.style.borderColor = 'rgba(255,255,255,.12)'; });
     b.style.borderColor = 'var(--lime)';
     await saveCfg({ hookPreset: b.dataset.preset });
+    refreshHookPreview(true);   // [HOOK-PREVIEW]
+  }));
+  document.querySelectorAll('#f_hookSec button').forEach(b => b.addEventListener('click', async () => {   // [HOOK-SEC]
+    document.querySelectorAll('#f_hookSec button').forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    await saveCfg({ hookSec: +b.dataset.v });
+    refreshHookPreview(true);
   }));
   document.querySelectorAll('#f_hookCase button').forEach(b => b.addEventListener('click', async () => {
     document.querySelectorAll('#f_hookCase button').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
     await saveCfg({ hookCase: b.dataset.case || '' });   // [HOOK-CASE]
+    refreshHookPreview(true);
   }));
   document.getElementById('f_capDim')?.addEventListener('input', async (e) => {
     const d = Math.max(0, Math.min(0.6, (+e.target.value || 0) / 100));
@@ -3328,6 +3341,45 @@ function kineticCaptionTitle(cue, cfg, next = null) {
 }
 let _dashKinCap = null;
 
+// [HOOK-PREVIEW] The hook picked in Clip Options, drawn in the dashboard preview
+// BEFORE the pipeline has made it. Same builder as the burn (hook-autoburn.js),
+// centred at the screen middle like [HOOK-CENTER]. Nothing is stored on the clip;
+// a real headline layer (made by a run) wins and this returns null.
+let _prevHookKey = '', _prevHookT = null;
+function previewHookTitle(clip) {
+  const cfg = state.cfg || {};
+  const HA = window.HookAutoburn;
+  if (!clip || !cfg.hookAutoBurn || !HA || !window.HookPresets) return null;
+  if ((clip.titles || []).some(t => t && t.src === 'headline')) return null;
+  if (!String(clip.hookText || clip.title || '').trim()) return null;
+  const preset = cfg.hookPreset || HA.DEFAULT_PRESET;
+  const dur = Math.max(1, (clip.end - clip.start) || 5);
+  const key = [preset, clip.hookText, clip.title, cfg.hookCase || '', cfg.hookSec, dur].join('|');
+  if (key === _prevHookKey) return _prevHookT;
+  _prevHookKey = key; _prevHookT = null;
+  try {
+    HA.setHookDur(cfg.hookSec);
+    const text = HA.hookTextWithSub(clip.hookText, clip.title, preset, cfg.hookCase || '');
+    const T = text ? HA.makeHookTitle(text, dur, preset, 960) : null;
+    if (T) { T.id = 'ttl_hookpv'; T.src = 'preview'; T.hideCaptions = true; _prevHookT = T; }
+  } catch { /* preview only: never break the dashboard */ }
+  return _prevHookT;
+}
+// [HOOK-EXPORT] The preview hook is virtual (never stored on clip.titles), so
+// every export path that sent clip.titles alone burned NO hook even though the
+// preview showed it. Export = stored titles + the same preview hook.
+function exportTitles(clip) {
+  const base = Array.isArray(clip && clip.titles) ? clip.titles : [];
+  const hook = previewHookTitle(clip);
+  return hook ? base.concat([hook]) : base;
+}
+function refreshHookPreview(seekToStart) {
+  try {
+    if (seekToStart && state.cfg.hookAutoBurn && els.preview && !state.previewTitlesBurned) els.preview.currentTime = 0;
+    _lastPreviewCue = '';
+    tickCaptionPreview();
+  } catch {}
+}
 // Dashboard-side tick: same painter, same stage geometry as applyCaptionStyle.
 function tickDashTitles() {
   const layer = document.getElementById('dashTitleLayer');
@@ -3343,10 +3395,11 @@ function tickDashTitles() {
   // painted live on top.
   const kin = state.previewTitlesBurned ? null : _dashKinCap;   // [KINETIC-CAPTION]
   const blendLayer = kinBlendLayerFor(layer);
-  if (!clip || ((!Array.isArray(clip.titles) || !clip.titles.length) && !kin) || state.previewTitlesBurned) { layer.innerHTML = ''; if (blendLayer) blendLayer.innerHTML = ''; return; }
+  const prevHook = previewHookTitle(clip);   // [HOOK-PREVIEW]
+  if (!clip || ((!Array.isArray(clip.titles) || !clip.titles.length) && !kin && !prevHook) || state.previewTitlesBurned) { layer.innerHTML = ''; if (blendLayer) blendLayer.innerHTML = ''; return; }
   const { w: W, h: H } = dashStageSize();   // [DASH-STAGE-SIZE]
   const sub = !!kin && kinSubtract(state.cfg);
-  paintTitleLayer(layer, (clip.titles || []).concat(kin && !sub ? [kin] : []), els.preview.currentTime || 0, W, H, {
+  paintTitleLayer(layer, (clip.titles || []).concat(prevHook ? [prevHook] : []).concat(kin && !sub ? [kin] : []), els.preview.currentTime || 0, W, H, {
     paused: !!els.preview.paused, interactive: false,
   });
   if (blendLayer) {
@@ -3441,6 +3494,15 @@ const BURN_FONTS = [
   { label: "Helvetica Neue Light", sample: "Helvetica Neue Light", size: 13, track: TRACK_EM_CSS, value: "HelveticaNeue-Light", css: "'Helvetica Neue Light',sans-serif" },
   { label: "Helvetica Neue Medium", sample: "Helvetica Neue Medium", size: 13, track: TRACK_EM_CSS, value: "HelveticaNeue-Medium", css: "'Helvetica Neue Medium',sans-serif" },
   { label: "Helvetica Neue Regular", sample: "Helvetica Neue Regular", size: 13, track: TRACK_EM_CSS, value: "HelveticaNeue-Roman", css: "'Helvetica Neue Regular',sans-serif" },
+  { label: "Alex Brush", sample: "Alex Brush", size: 15, track: '0', value: "Alex Brush", css: "'Alex Brush',cursive" },
+  { label: "Antonio", sample: "Antonio", size: 15, track: TRACK_EM_CSS, value: "Antonio", css: "'Antonio',sans-serif" },
+  { label: "Instrument Serif", sample: "Instrument Serif", size: 15, track: TRACK_EM_CSS, value: "Instrument Serif Regular", css: "'Instrument Serif Regular',serif" },
+  { label: "Plus Jakarta Sans", sample: "Plus Jakarta Sans", size: 15, track: TRACK_EM_CSS, value: "Plus Jakarta Sans", css: "'Plus Jakarta Sans',sans-serif" },
+  { label: "SF Pro Display", sample: "SF Pro Display", size: 15, track: TRACK_EM_CSS, value: "SFProDisplay-Regular", css: "'SFProDisplay-Regular',sans-serif" },
+  { label: "SF Pro Display Semibold", sample: "SF Pro Display Semibold", size: 15, track: TRACK_EM_CSS, value: "SFProDisplay-Semibold", css: "'SFProDisplay-Semibold',sans-serif" },
+  { label: "SF Pro Display Bold", sample: "SF Pro Display Bold", size: 15, track: TRACK_EM_CSS, value: "SFProDisplay-Bold", css: "'SFProDisplay-Bold',sans-serif" },
+  { label: "Times New Roman", sample: "Times New Roman", size: 15, track: TRACK_EM_CSS, value: "Times New Roman", css: "'Times New Roman',serif" },
+  { label: "Times New Roman Italic", sample: "Times New Roman Italic", size: 15, track: TRACK_EM_CSS, value: "Times New Roman Italic", css: "'Times New Roman Italic',serif" },
   { label: "Instrument Serif Italic", sample: "Instrument Serif Italic", size: 13, track: TRACK_EM_CSS, value: "Instrument Serif Italic", css: "'Instrument Serif Italic',sans-serif" },
   { label: "Inter Black", sample: "Inter Black", size: 15, track: TRACK_EM_CSS, value: "Inter SOCL Black", css: "'Inter SOCL Black',sans-serif" },
   { label: "Inter Bold", sample: "Inter Bold", size: 17, track: TRACK_EM_CSS, value: "Inter SOCL Bold", css: "'Inter SOCL Bold',sans-serif" },
@@ -5009,7 +5071,7 @@ function openCropStudio(idx) {
     // manual framing instead of silently reviving smart-track.
     if (wantSubs) {
       payload.cueWords = clip.cueWords;
-      payload.titles   = Array.isArray(clip.titles) ? clip.titles : [];
+      payload.titles   = exportTitles(clip);   // [HOOK-EXPORT]
       payload.trackPlan = null;
       // [AI-STICKER-CACHE] Per-clip, like trackPlan/titles above — the AI's
       // prior sticker resolutions for THIS clip's cues, so a re-render never
@@ -6101,7 +6163,8 @@ function tickCaptionPreview() {
   // between two cues does not blank the preview either. Declared out here:
   // the cap-contig check below reads it too.
   const dispCues = window.CaptionBox.bridgeCueGaps(state.cueWords || []) || [];
-  const hookHides = captionsHiddenByHook((state.clips[state.activeClip] || {}).titles, t);
+  const _hookClip = state.clips[state.activeClip] || {};
+  const hookHides = captionsHiddenByHook((_hookClip.titles || []).concat(previewHookTitle(_hookClip) || []), t);   // [HOOK-PREVIEW]
   if (dispCues.length && !hookHides && subsOn()) {   // [SUBS-TOGGLE]
     const i = dispCues.findIndex(w => t >= w.start && t < w.end);
     if (i >= 0) { activeCue = dispCues[i]; active = activeCue.text; activeIdx = i; }
@@ -8273,6 +8336,15 @@ const CAPTION_FONTS = [
   { label: 'Salted Butter',             value: 'ATP-SaltedButter' },
   { label: 'Slow Living Rounded',       value: 'Slow Living Club Rounded' },
   { label: 'Slow Living Outline',       value: 'Slow Living Club Outline' },
+  { label: "Alex Brush", value: "Alex Brush" },
+  { label: "Antonio", value: "Antonio" },
+  { label: "Instrument Serif", value: "Instrument Serif Regular" },
+  { label: "Plus Jakarta Sans", value: "Plus Jakarta Sans" },
+  { label: "SF Pro Display", value: "SFProDisplay-Regular" },
+  { label: "SF Pro Display Semibold", value: "SFProDisplay-Semibold" },
+  { label: "SF Pro Display Bold", value: "SFProDisplay-Bold" },
+  { label: "Times New Roman", value: "Times New Roman" },
+  { label: "Times New Roman Italic", value: "Times New Roman Italic" },
 ];
 // Shared <option> list builder — was a closure local to renderTitlesList();
 // hoisted so custom-chunk rules (which need the same font list) don't need
@@ -11502,7 +11574,7 @@ function openCaptionEditorInner(clipIdx) {
          Without this, re-render falls back to centre crop (regression). */
       trackPlan:      clip.trackPlan || null,
       /* [TITLE-V1] persistent titles ride the same payload → ASS burn. */
-      titles:         Array.isArray(clip.titles) ? clip.titles : [],
+      titles:         exportTitles(clip),   // [HOOK-EXPORT]
       manualCaptions: Array.isArray(clip.manualCaptions) ? clip.manualCaptions : [],   // [MANUAL-CAPTION]
       /* [AI-STICKER-CACHE] Per-clip, like trackPlan/titles: the AI's prior
          sticker resolutions for THIS clip's cues, so clicking Preview again
@@ -11665,7 +11737,7 @@ function openCaptionEditorInner(clipIdx) {
       // [TITLE-DOUBLE] Same anchor-on-the-actual-burn-condition reasoning as
       // subsBurned above — renderClipEdit only burns titles that were passed
       // in buildCePayload's `titles`, which is exactly clip.titles here.
-      clip.titlesBurned = Array.isArray(clip.titles) && clip.titles.length > 0;
+      clip.titlesBurned = exportTitles(clip).length > 0;   // [HOOK-EXPORT]
       // [WM-DOUBLE] renderClipEdit burns buildCePayload's `watermark`, which
       // was currentWatermark(clip) at click time — recomputing it now still
       // matches unless settings changed mid-render (same narrow staleness
@@ -12739,7 +12811,7 @@ async function batchRenderClips(indices, hooks = {}) {
       timeline:       clip.timeline || null,   // [CLIP-TIMELINE]
       /* [SMART-TRACK-REUSE] reuse the trackPlan captured during runPipeline */
       trackPlan:      clip.trackPlan || null,
-      titles:         Array.isArray(clip.titles) ? clip.titles : [],   // [TITLE-V1]
+      titles:         exportTitles(clip),   // [TITLE-V1] [HOOK-EXPORT]
       manualCaptions: Array.isArray(clip.manualCaptions) ? clip.manualCaptions : [],   // [MANUAL-CAPTION]
       style,
       /* [WM-V1] Project default merged with per-clip override */
@@ -12765,7 +12837,7 @@ async function batchRenderClips(indices, hooks = {}) {
     clip.subsBurned = subsOn() && Array.isArray(clip.cueWords) && clip.cueWords.length > 0;
     clip.fxBurned = !!(state.cfg && state.cfg.videoFx);
     // [TITLE-DOUBLE] See the same flag set on Caption Editor's Apply above.
-    clip.titlesBurned = Array.isArray(clip.titles) && clip.titles.length > 0;
+    clip.titlesBurned = exportTitles(clip).length > 0;   // [HOOK-EXPORT]
     // [WM-DOUBLE] See the same flag set on Caption Editor's Apply above —
     // this call's payload also sent watermark: currentWatermark(clip).
     clip.watermarkBurnedSnapshot = JSON.stringify(currentWatermark(clip));

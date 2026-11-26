@@ -87,6 +87,14 @@ app.on('window-all-closed', () => {
   __sevntPersistentTrace('APP window-all-closed');
 });
 
+// Web links open in the user's browser, not in a bare Electron window.
+app.on('web-contents-created', (_event, contents) => {
+  contents.setWindowOpenHandler(({ url }) => {
+    if (/^https:\/\//i.test(url)) require('electron').shell.openExternal(url);
+    return { action: 'deny' };
+  });
+});
+
 app.on('browser-window-created', (_event, win) => {
   __sevntPersistentTrace('BROWSER WINDOW CREATED', win.id);
 

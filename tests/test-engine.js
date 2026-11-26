@@ -1,4 +1,4 @@
-// Integration tests for the engine supervisor + engine (real Python process, real HTTP). No mocks of the engine.
+﻿// Integration tests for the engine supervisor + engine (real Python process, real HTTP). No mocks of the engine.
 'use strict';
 const fs = require('fs');
 const os = require('os');
@@ -13,8 +13,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function waitFor(fn, ms, step = 200) { const t = Date.now(); while (Date.now() - t < ms) { if (await fn()) return true; await sleep(step); } return false; }
 
 module.exports = async function () {
-  console.log('\n▶ engine: supervisor + local API (real Python process)');
-  if (!findPython()) { console.log('  ⚠ NOT RUN: no Python runtime found (set SEVNT_ENGINE_PYTHON or build the engine runtime)'); return; }
+  console.log('\nâ–¶ engine: supervisor + local API (real Python process)');
+  if (!findPython()) { console.log('  âš  NOT RUN: no Python runtime found (set SEVNT_ENGINE_PYTHON or build the engine runtime)'); return; }
 
   let sup;
   await test('missing runtime reports "unavailable" instead of throwing', async ({ assertEqual }) => {
@@ -116,7 +116,7 @@ module.exports = async function () {
   }
   let asr;
   await test('S1: faster-whisper transcribes real speech through the supervisor (word timestamps)', async ({ assert }) => {
-    if (!haveWav) { console.log('    ⚠ NOT RUN: could not synthesise a speech sample on this OS'); return; }
+    if (!haveWav) { console.log('    âš  NOT RUN: could not synthesise a speech sample on this OS'); return; }
     asr = new EngineSupervisor(makeSupervisorOptions());
     assert((await asr.start()).state === 'ready', 'engine not ready');
     const progress = [];
@@ -126,10 +126,11 @@ module.exports = async function () {
     assert(/transcription|test/.test(text) && /fox|quick/.test(text), `unexpected transcript: ${text}`);
     assert(r.words.every((w) => w.end > w.start) && r.words.every((w, i, a) => i === 0 || w.start >= a[i - 1].start - 0.01), 'timestamps not monotonic');
     assert(r.modelUsed === 'tiny', `model used ${r.modelUsed}`);
+    await sleep(1500); // allow Python ASR cleanup and lock release
   });
 
   await test('S1: a second job while one is running is refused (one at a time on 8 GB machines)', async ({ assert }) => {
-    if (!haveWav || !asr) { console.log('    ⚠ NOT RUN'); return; }
+    if (!haveWav || !asr) { console.log('    âš  NOT RUN'); return; }
     const j1 = await asr.request('POST', '/api/v1/asr/transcribe', { audio_path: wav, model: 'tiny', language: 'en' });
     let status = 0; try { await asr.request('POST', '/api/v1/asr/transcribe', { audio_path: wav, model: 'tiny', language: 'en' }); } catch (e) { status = e.status; }
     // the first job may already be done on a fast machine; accept 409 or success only when job 1 finished
@@ -139,7 +140,7 @@ module.exports = async function () {
   });
 
   await test('S1: bad inputs are rejected (relative path, missing file, bad model)', async ({ assertEqual }) => {
-    if (!asr) { console.log('    ⚠ NOT RUN'); return; }
+    if (!asr) { console.log('    âš  NOT RUN'); return; }
     for (const [body, want] of [[{ audio_path: 'relative.wav' }, 400], [{ audio_path: path.join(os.tmpdir(), 'nope-123.wav') }, 400], [{ audio_path: wav, model: 'large-v3' }, 422]]) {
       let status = 0; try { await asr.request('POST', '/api/v1/asr/transcribe', body); } catch (e) { status = e.status; }
       assertEqual(status, want, JSON.stringify(body));
@@ -147,7 +148,7 @@ module.exports = async function () {
   });
 
   await test('S1: cancelling a job stops it', async ({ assert }) => {
-    if (!haveWav || !asr) { console.log('    ⚠ NOT RUN'); return; }
+    if (!haveWav || !asr) { console.log('    âš  NOT RUN'); return; }
     let cancelled = false;
     try { await transcribeViaEngine(asr, { audioPath: wav, model: 'tiny', language: 'en', pollMs: 50, isCancelled: () => (cancelled = true) }); } catch (e) { assert(e.code === 'cancelled', e.code); }
     assert(cancelled, 'cancel hook not consulted');
@@ -155,7 +156,7 @@ module.exports = async function () {
   });
 
   await test('S1 FALLBACK: when the engine is stopped the ASR call fails fast with engine_unavailable', async ({ assert }) => {
-    if (!asr) { console.log('    ⚠ NOT RUN'); return; }
+    if (!asr) { console.log('    âš  NOT RUN'); return; }
     await asr.stop();
     let code = ''; try { await transcribeViaEngine(asr, { audioPath: wav, model: 'tiny' }); } catch (e) { code = e.code; }
     assert(code === 'engine_unavailable', `code ${code}`);

@@ -8,8 +8,7 @@ const fs = require('fs'); const os = require('os'); const path = require('path')
 const [reportFile, outFile, kin] = process.argv.slice(-3);
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'sevnt-ws-')));
 const pre = path.join(os.tmpdir(), 'sevnt-ws-preload-' + process.pid + '.js');
-const realCfg = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA, 'SEVNT_Dev', 'settings.json'), 'utf8'));
-realCfg.captionKinetic = (kin && kin !== 'none') ? kin : '';
+const realCfg = require('./qa-settings').createQaSettings({ captionKinetic: (kin && kin !== 'none') ? kin : '' });
 fs.writeFileSync(pre, `
 const CFG = ${JSON.stringify(realCfg)};
 const mk = (name) => new Proxy(function () {}, {

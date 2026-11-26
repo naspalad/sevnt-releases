@@ -8,8 +8,7 @@ const [reportFile, outFile] = process.argv.slice(-2);
 app.commandLine.appendSwitch('disable-features', 'CalculateNativeWinOcclusion');
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'sevnt-pk-')));
 const pre = path.join(os.tmpdir(), 'sevnt-pk-preload-' + process.pid + '.js');
-const realCfg = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA, 'SEVNT_Dev', 'settings.json'), 'utf8'));
-realCfg.format = 'landscape'; realCfg.captionKinetic = 'cap_editorialswiss'; realCfg.subtitleFontSize = 64; realCfg.subtitleY = 540;
+const realCfg = require('./qa-settings').createQaSettings({ format: 'landscape', captionKinetic: 'cap_editorialswiss', subtitleFontSize: 64, subtitleY: 540 });
 fs.writeFileSync(pre, `
 const CFG = ${JSON.stringify(realCfg)};
 const mk = (name) => new Proxy(function () {}, {

@@ -13,8 +13,8 @@
  *   SUPPORT_RECOVERY  — Recovered/reissued license key
  *   ACTIVATION_CONFIRM — Device activation confirmation
  *
- * QUOTA NOTE: GmailApp/MailApp is limited to ~100 emails/day for consumer
- * Google accounts and 1500/day for Workspace. Monitor EMAIL_OUTBOX failures.
+ * Sending: Brevo Transactional API (api.brevo.com/v3/smtp/email)
+ * Required Script Properties: BREVO_API_KEY, BREVO_SENDER_EMAIL
  */
 
 const EmailService = (function() {
@@ -29,26 +29,13 @@ const EmailService = (function() {
 
   // ─── Queue ────────────────────────────────────────────────────────────────
 
-  /**
-   * Queue a license delivery email (after successful payment).
-   *
-   * @param {string} licenseId
-   * @param {string} recipientEmail
-   * @param {string} licenseKey     - Plaintext key (sent to customer via email)
-   */
-  function queueLicenseDelivery(licenseId, recipientEmail, licenseKey) {
+  function queueLicenseDelivery(licenseId, recipientEmail, licenseKey, customerName) {
     _queue(licenseId, recipientEmail, TEMPLATES.LICENSE_DELIVERY, {
-      license_key: licenseKey
+      license_key:   licenseKey,
+      customer_name: customerName || ''
     });
   }
 
-  /**
-   * Queue a support recovery email.
-   *
-   * @param {string} licenseId
-   * @param {string} recipientEmail
-   * @param {string} newLicenseKey  - New plaintext key (or null if no reissue)
-   */
   function queueSupportRecovery(licenseId, recipientEmail, newLicenseKey) {
     _queue(licenseId, recipientEmail, TEMPLATES.SUPPORT_RECOVERY, {
       license_key: newLicenseKey || null
@@ -79,10 +66,6 @@ const EmailService = (function() {
 
   // ─── Processor (called by trigger) ───────────────────────────────────────
 
-  /**
-   * Process the email outbox. Called by a time-based Apps Script trigger.
-   * Run from: Edit > Triggers > processEmailQueue — every 5 minutes.
-   */
   function processEmailQueue() {
     const pending = DatabaseService.findPendingEmails();
     if (pending.length === 0) return;
@@ -119,12 +102,33 @@ const EmailService = (function() {
     const payload = job.payload ? JSON.parse(job.payload) : {};
     const content = _renderTemplate(job.template, payload, job.recipient);
 
-    MailApp.sendEmail({
-      to:       job.recipient,
-      subject:  content.subject,
-      htmlBody: content.html,
-      body:     content.text
+    const apiKey = PropertiesService.getScriptProperties().getProperty('BREVO_API_KEY');
+    if (!apiKey) throw new Error('BREVO_API_KEY not set in Script Properties');
+
+    const senderEmail = PropertiesService.getScriptProperties().getProperty('BREVO_SENDER_EMAIL');
+    if (!senderEmail) throw new Error('BREVO_SENDER_EMAIL not set in Script Properties');
+
+    const response = UrlFetchApp.fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: {
+        'api-key': apiKey,
+        'accept':  'application/json'
+      },
+      payload: JSON.stringify({
+        sender:      { name: 'SEVNT Studio', email: senderEmail },
+        to:          [{ email: job.recipient }],
+        subject:     content.subject,
+        htmlContent: content.html,
+        textContent: content.text
+      }),
+      muteHttpExceptions: true
     });
+
+    const status = response.getResponseCode();
+    if (status < 200 || status >= 300) {
+      throw new Error('Brevo send failed (' + status + '): ' + response.getContentText());
+    }
   }
 
   // ─── Templates ────────────────────────────────────────────────────────────
@@ -142,152 +146,234 @@ const EmailService = (function() {
     }
   }
 
+  function _escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function _templateLicenseDelivery(licenseKey, recipientEmail, customerName) {
-    const subject = 'Your SOCL Visuals Studio License Key';
-    const displayName = customerName || recipientEmail || 'there';
-    const appVersion = 'v2.3.1';
+    const subject = 'Akses SEVNT Studio Kamu Siap Digunakan — Kunci Lisensi';
+    const rawName = (customerName || '').trim();
+    const greetingName = rawName || (recipientEmail ? recipientEmail.split('@')[0] : 'Kreator');
+
+    const safeGreetingName = _escapeHtml(greetingName);
+    const safeLicenseKey   = _escapeHtml(licenseKey || 'SEVNT-XXXX-XXXX-XXXX');
+    const safeEmail        = _escapeHtml(recipientEmail || '');
+
+    const uniqueRef  = Utilities.getUuid().slice(0, 8).toUpperCase();
+    const telegramUrl = 'https://t.me/+fXwm7qL6sb1jZjhl';
+    const downloadUrl = 'https://sevnt-downloader.vercel.app/';
+
+    const headerBg = [
+      'background-color: #050505;',
+      'background-image: linear-gradient(180deg, rgba(255, 255, 255, 0) 64%, rgba(255, 255, 255, 0.5) 82%, rgba(255, 255, 255, 0.92) 93%, #ffffff 100%),',
+      'radial-gradient(125% 105% at 88% 82%, rgba(255, 255, 255, 0.98) 0%, rgba(255, 232, 237, 0.92) 15%, rgba(240, 68, 99, 0.65) 34%, rgba(153, 17, 42, 0.35) 54%, rgba(5, 5, 5, 0) 76%),',
+      'linear-gradient(166deg, #040404 0%, #070709 36%, #2a060e 53%, #880e24 64%, #e11d48 72%, #ffa8b8 79%, #ffffff 87%, #ffffff 100%);'
+    ].join(' ');
 
     const text = [
-      'You\'re in, ' + displayName + '.',
-      'Welcome to the studio. Time to make some viral hooks.',
+      'Akses SEVNT Studio Siap Digunakan.',
       '',
-      'LICENSE KEY:',
-      licenseKey,
+      'Halo ' + greetingName + ',',
+      'Terima kasih telah memilih SEVNT Studio. Lisensi kamu berhasil dibuat dan sekarang siap digunakan.',
       '',
-      'ACTIVATION EMAIL:',
+      'KUNCI LISENSI KAMU:',
+      licenseKey || '',
+      'Simpan kunci lisensi ini dengan aman.',
+      '',
+      'EMAIL AKTIVASI:',
       recipientEmail || '',
-      'Use this exact email when activating in the app.',
+      'Gunakan alamat email yang sama saat mengaktifkan aplikasi.',
       '',
-      'QUICK START:',
-      '01  Download for your OS',
-      '02  Mac: right-click app > Open. Win: More info > Run anyway',
-      '03  Paste your email + license key',
-      '04  Hit Activate. Start cooking.',
+      'UNDUH APLIKASI:',
+      downloadUrl,
       '',
-      '1 license · 1 device · lifetime updates',
-      'Need to switch devices? Email soclvisuals@gmail.com',
+      'PANDUAN MEMULAI:',
+      '01  Unduh SEVNT Studio.',
+      '02  Pasang, lalu buka aplikasinya.',
+      '03  Masukkan email aktivasi dan kunci lisensi kamu.',
+      '04  Klik Aktifkan untuk mulai menggunakan SEVNT Studio.',
       '',
-      '© SOCL Visuals Studio · Make hooks, not noise.'
+      'KOMUNITAS DI TELEGRAM:',
+      telegramUrl,
+      '',
+      'INFORMASI LISENSI:',
+      '1 Lisensi · 1 Perangkat · Pembaruan Selamanya',
+      'Butuh bantuan? Hubungi support@sevntstudio.com',
+      '',
+      '© 2026 SEVNT Studio. Hak cipta dilindungi. Ref: ' + uniqueRef
     ].join('\n');
 
-    const html = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
-      '<meta name="viewport" content="width=device-width,initial-scale=1">' +
-      '<style>' +
-        'body{margin:0;padding:0;background:#0d0d0d;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}' +
-        '.wrap{max-width:400px;margin:0 auto;padding:32px 16px;}' +
-        '.logo-box{display:inline-block;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:12px 18px;text-align:center;margin-bottom:16px;}' +
-        '.logo-text{color:#c8ff00;font-size:22px;font-weight:800;letter-spacing:1px;line-height:1.1;}' +
-        '.brand-row{margin-bottom:28px;}' +
-        '.brand-name{color:#888;font-size:11px;letter-spacing:3px;text-transform:uppercase;}' +
-        '.version-badge{display:inline-block;background:#c8ff00;color:#0d0d0d;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:8px;letter-spacing:1px;}' +
-        'h1{color:#fff;font-size:26px;font-weight:700;margin:0 0 8px;}' +
-        '.subtitle{color:#666;font-size:14px;margin:0 0 32px;}' +
-        '.subtitle a{color:#c8ff00;text-decoration:none;}' +
-        '.card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-bottom:12px;}' +
-        '.card-label{color:#555;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;}' +
-        '.license-key{color:#c8ff00;font-family:"Courier New",monospace;font-size:16px;font-weight:700;letter-spacing:1px;word-break:break-all;}' +
-        '.email-val{color:#fff;font-size:14px;}' +
-        '.email-hint{color:#555;font-size:11px;margin-top:4px;}' +
-        '.section-label{color:#555;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin:28px 0 12px;}' +
-        '.dl-btn{display:block;background:#c8ff00;color:#0d0d0d;text-decoration:none;border-radius:10px;padding:14px 20px;font-size:14px;font-weight:700;text-align:center;margin-bottom:4px;}' +
-        '.dl-sub{color:#555;font-size:11px;text-align:center;margin-bottom:28px;}' +
-        '.steps{margin:0;padding:0;list-style:none;}' +
-        '.step{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px;}' +
-        '.step-num{color:#c8ff00;font-size:11px;font-weight:700;min-width:20px;padding-top:1px;}' +
-        '.step-text{color:#aaa;font-size:13px;line-height:1.4;}' +
-        '.step-text strong{color:#fff;}' +
-        '.tg-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin-top:28px;}' +
-        '.tg-label{color:#555;font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;}' +
-        '.tg-title{color:#fff;font-size:16px;font-weight:700;margin-bottom:2px;}' +
-        '.tg-sub{color:#555;font-size:11px;}' +
-        '.footer{color:#333;font-size:11px;text-align:center;margin-top:32px;line-height:1.8;}' +
-        '.footer a{color:#555;text-decoration:none;}' +
-      '</style></head><body>' +
-      '<div class="wrap">' +
-        '<div style="text-align:center;">' +
-          '<div class="logo-box"><div class="logo-text">SCL<br>VSL</div></div>' +
-        '</div>' +
-        '<div class="brand-row" style="text-align:center;">' +
-          '<span class="brand-name">SOCL Visuals Studio</span>' +
-          '<span class="version-badge">' + appVersion + ' · Latest</span>' +
-        '</div>' +
-        '<h1>You\'re in, ' + displayName + '. ✦</h1>' +
-        '<p class="subtitle">Welcome to the studio. Time to make some <a href="#">viral hooks.</a></p>' +
-        '<div class="card">' +
-          '<div class="card-label">License Key</div>' +
-          '<div class="license-key">' + licenseKey + '</div>' +
-        '</div>' +
-        '<div class="card">' +
-          '<div class="card-label">Activation Email</div>' +
-          '<div class="email-val">' + (recipientEmail || '') + '</div>' +
-          '<div class="email-hint">Use this exact email when activating in the app.</div>' +
-        '</div>' +
-        '<div class="section-label">↓ Get the App</div>' +
-        '<a class="dl-btn" href="https://soclvisuals.com/download">↓ Download SOCL Visuals Studio →</a>' +
-        '<div class="dl-sub">Mac (Apple Silicon / Intel) · Windows (Installer / Portable) · always the latest version</div>' +
-        '<div class="section-label">Quick Start</div>' +
-        '<ul class="steps">' +
-          '<li class="step"><span class="step-num">01</span><span class="step-text">Download for your OS</span></li>' +
-          '<li class="step"><span class="step-num">02</span><span class="step-text">Mac: right-click app > <strong>Open</strong>. Win: <strong>More info → Run anyway</strong></span></li>' +
-          '<li class="step"><span class="step-num">03</span><span class="step-text">Paste your email + license key</span></li>' +
-          '<li class="step"><span class="step-num">04</span><span class="step-text">Hit <strong>Activate.</strong> Start cooking. 🔥</span></li>' +
-        '</ul>' +
-        '<div class="tg-card">' +
-          '<div class="tg-label">Join the Studio</div>' +
-          '<div class="tg-title">Community on Telegram →</div>' +
-          '<div class="tg-sub">Updates · tips · showcase · troubleshoot</div>' +
-        '</div>' +
-        '<div class="footer">' +
-          '1 license · 1 device · lifetime updates<br>' +
-          'Need to switch devices? Email <a href="mailto:soclvisuals@gmail.com">soclvisuals@gmail.com</a><br><br>' +
-          '© SOCL Visuals Studio · Make hooks, not noise.' +
-        '</div>' +
-      '</div>' +
-      '</body></html>';
+    const html = [
+      '<!DOCTYPE html>',
+      '<html lang="id">',
+      '<head>',
+      '<meta charset="UTF-8">',
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+      '<title>SEVNT Studio — Pengiriman Lisensi</title>',
+      '</head>',
+      '<body style="margin:0;padding:0;background-color:#e9e9ec;font-family:\'Plus Jakarta Sans\',Arial,Helvetica,sans-serif;color:#18181b;">',
+      '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#e9e9ec;width:100%;">',
+      '  <tr>',
+      '    <td align="center" style="padding:32px 12px;">',
+      '      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff;border:1px solid #dedee2;border-radius:18px;overflow:hidden;">',
+
+      // HEADER
+      '        <tr>',
+      '          <td align="center" style="padding:34px 28px 92px;text-align:center;' + headerBg + '">',
+      '            <img src="https://i.ibb.co.com/Jj1byCz1/SEVNT-STUDIO.png" width="118" height="118" alt="Logo SEVNT Studio" style="display:block;width:118px;height:118px;object-fit:contain;margin:0 auto 6px;border:0;">',
+      '            <div style="font-size:18px;font-weight:800;letter-spacing:0.8px;color:#ffffff;text-shadow:0 2px 10px rgba(0,0,0,0.85);">SEVNT <span style="color:#ff4d6d;">STUDIO</span></div>',
+      '            <div style="margin-top:4px;color:#f4f4f5;font-size:9px;font-weight:600;letter-spacing:2.5px;text-shadow:0 1px 8px rgba(0,0,0,0.85);">PENGIRIMAN LISENSI STUDIO</div>',
+      '          </td>',
+      '        </tr>',
+
+      // INTRO
+      '        <tr>',
+      '          <td align="center" style="padding:14px 32px 20px;background-color:#ffffff;text-align:center;">',
+      '            <h1 style="margin:0 0 13px;font-size:26px;font-weight:800;line-height:1.25;letter-spacing:-0.5px;color:#18181b;">Akses SEVNT Studio Siap Digunakan.</h1>',
+      '            <p style="margin:0;color:#5b5b63;font-size:14px;line-height:1.8;">Halo ' + safeGreetingName + ',<br><br>Terima kasih telah memilih SEVNT Studio. Lisensi kamu berhasil dibuat dan sekarang siap digunakan.</p>',
+      '          </td>',
+      '        </tr>',
+
+      // KUNCI LISENSI
+      '        <tr>',
+      '          <td style="padding:12px 32px 0;background-color:#ffffff;">',
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fafafa;border:1px solid #e7e7e9;border-radius:14px;">',
+      '              <tr>',
+      '                <td align="center" style="padding:21px 22px;text-align:center;">',
+      '                  <div style="color:#777780;font-size:10px;font-weight:700;letter-spacing:2px;">KUNCI LISENSI KAMU</div>',
+      '                  <div style="margin-top:12px;color:#dc2626;font-size:19px;font-weight:700;line-height:1.5;word-break:break-all;">' + safeLicenseKey + '</div>',
+      '                  <div style="margin-top:8px;color:#85858d;font-size:11px;line-height:1.6;">Simpan kunci lisensi ini dengan aman.</div>',
+      '                </td>',
+      '              </tr>',
+      '            </table>',
+      '          </td>',
+      '        </tr>',
+
+      // EMAIL AKTIVASI
+      '        <tr>',
+      '          <td style="padding:12px 32px 0;background-color:#ffffff;">',
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fafafa;border:1px solid #e7e7e9;border-radius:14px;">',
+      '              <tr>',
+      '                <td align="center" style="padding:21px 22px;text-align:center;">',
+      '                  <div style="color:#777780;font-size:10px;font-weight:700;letter-spacing:2px;">EMAIL AKTIVASI</div>',
+      '                  <div style="margin-top:10px;font-size:14px;font-weight:700;color:#18181b;word-break:break-all;">' + safeEmail + '</div>',
+      '                  <div style="margin-top:8px;color:#85858d;font-size:11px;line-height:1.6;">Gunakan alamat email yang sama saat mengaktifkan aplikasi.</div>',
+      '                </td>',
+      '              </tr>',
+      '            </table>',
+      '          </td>',
+      '        </tr>',
+
+      // UNDUH APLIKASI
+      '        <tr>',
+      '          <td align="center" style="padding:27px 32px 0;background-color:#ffffff;text-align:center;">',
+      '            <div style="color:#777780;font-size:10px;font-weight:700;letter-spacing:2px;">UNDUH APLIKASI</div>',
+      '            <p style="margin:10px 0 15px;color:#62626a;font-size:13px;line-height:1.7;">Unduh SEVNT Studio dan pasang aplikasinya di komputer kamu.</p>',
+      '            <a href="' + downloadUrl + '" target="_blank" style="display:inline-block;padding:14px 22px;background-color:#dc2626;color:#ffffff;text-decoration:none;font-size:13px;font-weight:700;border-radius:10px;">Unduh SEVNT Studio</a>',
+      '          </td>',
+      '        </tr>',
+
+      // PANDUAN MEMULAI
+      '        <tr>',
+      '          <td style="padding:27px 32px 0;background-color:#ffffff;">',
+      '            <div style="color:#777780;font-size:10px;font-weight:700;letter-spacing:2px;margin-bottom:14px;">PANDUAN MEMULAI</div>',
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">',
+      '              <tr><td width="34" valign="top" style="padding:8px 0;color:#dc2626;font-size:13px;font-weight:700;">01</td><td valign="top" style="padding:8px 0;color:#5d5d65;font-size:13px;line-height:1.55;">Unduh SEVNT Studio.</td></tr>',
+      '              <tr><td width="34" valign="top" style="padding:8px 0;color:#dc2626;font-size:13px;font-weight:700;">02</td><td valign="top" style="padding:8px 0;color:#5d5d65;font-size:13px;line-height:1.55;">Pasang, lalu buka aplikasinya.</td></tr>',
+      '              <tr><td width="34" valign="top" style="padding:8px 0;color:#dc2626;font-size:13px;font-weight:700;">03</td><td valign="top" style="padding:8px 0;color:#5d5d65;font-size:13px;line-height:1.55;">Masukkan email aktivasi dan kunci lisensi kamu.</td></tr>',
+      '              <tr><td width="34" valign="top" style="padding:8px 0;color:#dc2626;font-size:13px;font-weight:700;">04</td><td valign="top" style="padding:8px 0;color:#5d5d65;font-size:13px;line-height:1.55;">Klik Aktifkan untuk mulai menggunakan SEVNT Studio.</td></tr>',
+      '            </table>',
+      '          </td>',
+      '        </tr>',
+
+      // KOMUNITAS TELEGRAM
+      '        <tr>',
+      '          <td style="padding:26px 32px 28px;background-color:#ffffff;">',
+      '            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#fafafa;border:1px solid #e7e7e9;border-radius:14px;">',
+      '              <tr>',
+      '                <td align="center" style="padding:22px;text-align:center;">',
+      '                  <div style="font-size:10px;font-weight:800;letter-spacing:2px;color:#dc2626;">JOIN THE AREA</div>',
+      '                  <div style="margin-top:14px;">',
+      '                    <a href="' + telegramUrl + '" target="_blank" style="display:inline-block;padding:13px 26px;border-radius:13px;text-decoration:none;font-size:14px;font-weight:700;color:#ffffff;background-color:#18181b;background-image:linear-gradient(125deg,#18181b 0%,#7f1d1d 55%,#dc2626 100%);border:1px solid #dc2626;">Komunitas Di Telegram &nbsp;&#10148;</a>',
+      '                  </div>',
+      '                  <div style="margin-top:12px;font-size:11px;line-height:1.6;color:#777780;">Update · Tips · Troubleshoot · Dan lain-lain</div>',
+      '                </td>',
+      '              </tr>',
+      '            </table>',
+      '          </td>',
+      '        </tr>',
+
+      // FOOTER
+      '        <tr>',
+      '          <td align="center" style="padding:23px 32px 26px;background-color:#fafafa;border-top:1px solid #eeeeee;text-align:center;">',
+      '            <strong style="font-size:12px;color:#18181b;">INFORMASI LISENSI</strong>',
+      '            <p style="margin:7px 0 0;color:#777780;font-size:12px;">1 Lisensi · 1 Perangkat · Pembaruan Selamanya</p>',
+      '            <p style="margin:7px 0 0;color:#777780;font-size:12px;">Butuh bantuan? Hubungi <a href="mailto:support@sevntstudio.com" style="color:#dc2626;text-decoration:none;">support@sevntstudio.com</a></p>',
+      '            <p style="margin:14px 0 0;">',
+      '              <a href="https://www.instagram.com/sevnt.hq?lqvp=MTN5aGRubmU4YTNsdg==" target="_blank" style="color:#dc2626;text-decoration:none;font-size:12px;font-weight:700;">',
+      '                <img src="https://i.ibb.co.com/BVTJ7d29/logo-instagram.jpg" width="18" height="18" alt="Instagram" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:5px;border:0;">',
+      '                <span style="vertical-align:middle;">@sevnt.hq</span>',
+      '              </a>',
+      '            </p>',
+      '            <p style="margin:19px 0 0;color:#a1a1aa;font-size:11px;">© 2026 SEVNT Studio. Hak cipta dilindungi. · ID #' + uniqueRef + '</p>',
+      '          </td>',
+      '        </tr>',
+
+      '      </table>',
+      '    </td>',
+      '  </tr>',
+      '</table>',
+      '</body>',
+      '</html>'
+    ].join('\n');
 
     return { subject: subject, text: text, html: html };
   }
 
   function _templateSupportRecovery(newLicenseKey) {
-    const subject = 'SEVNT Studio — Account Recovery';
+    const subject = 'SEVNT Studio — Pemulihan Akun';
     const keySection = newLicenseKey
-      ? 'New License Key:\n' + newLicenseKey + '\n\nAll previous device activations have been cleared.'
-      : 'Your account has been recovered. All previous device activations have been cleared.\n' +
-        'You can now activate your devices again using your original license key.';
+      ? 'Kunci Lisensi Baru:\n' + newLicenseKey + '\n\nSemua aktivasi perangkat sebelumnya telah dihapus.'
+      : 'Akun kamu telah dipulihkan. Semua aktivasi perangkat sebelumnya telah dihapus.\n' +
+        'Kamu dapat mengaktifkan perangkat lagi menggunakan kunci lisensi asli kamu.';
 
     const text = [
-      'Your SEVNT Studio account has been recovered by our support team.',
+      'Akun SEVNT Studio kamu telah dipulihkan oleh tim support kami.',
       '',
       keySection,
       '',
-      'If you did not request this recovery, contact support@sevntstudio.com immediately.',
+      'Jika kamu tidak meminta pemulihan ini, hubungi support@sevntstudio.com segera.',
       '',
       'SEVNT Studio Support'
     ].join('\n');
 
-    const html = '<p>Your SEVNT Studio account has been recovered by our support team.</p>' +
+    const html = '<p>Akun SEVNT Studio kamu telah dipulihkan oleh tim support kami.</p>' +
       (newLicenseKey
-        ? '<p><strong>New License Key:</strong></p>' +
-          '<p style="font-family:monospace;font-size:1.2em;background:#f5f5f5;padding:12px;border-radius:4px;">' + newLicenseKey + '</p>' +
-          '<p>All previous device activations have been cleared.</p>'
-        : '<p>All previous device activations have been cleared. You can re-activate with your original key.</p>') +
-      '<p><small>If you did not request this, contact <a href="mailto:support@sevntstudio.com">support@sevntstudio.com</a> immediately.</small></p>';
+        ? '<p><strong>Kunci Lisensi Baru:</strong></p>' +
+          '<p style="font-family:monospace;font-size:1.2em;background:#f5f5f5;padding:12px;border-radius:4px;">' + _escapeHtml(newLicenseKey) + '</p>' +
+          '<p>Semua aktivasi perangkat sebelumnya telah dihapus.</p>'
+        : '<p>Semua aktivasi perangkat sebelumnya telah dihapus. Kamu dapat mengaktifkan ulang dengan kunci asli kamu.</p>') +
+      '<p><small>Jika kamu tidak meminta ini, hubungi <a href="mailto:support@sevntstudio.com">support@sevntstudio.com</a> segera.</small></p>';
 
     return { subject: subject, text: text, html: html };
   }
 
   function _templateActivationConfirm() {
-    const subject = 'SEVNT Studio — Device Activated';
-    const text = 'Your device has been successfully activated for SEVNT Studio.\n\nSEVNT Studio Team';
-    const html = '<p>Your device has been successfully activated for SEVNT Studio.</p>';
+    const subject = 'SEVNT Studio — Perangkat Diaktifkan';
+    const text = 'Perangkat kamu berhasil diaktifkan untuk SEVNT Studio.\n\nTim SEVNT Studio';
+    const html = '<p>Perangkat kamu berhasil diaktifkan untuk SEVNT Studio.</p>';
     return { subject: subject, text: text, html: html };
   }
 
   return {
-    TEMPLATES:            TEMPLATES,
-    queueLicenseDelivery: queueLicenseDelivery,
-    queueSupportRecovery: queueSupportRecovery,
-    processEmailQueue:    processEmailQueue,
+    TEMPLATES:             TEMPLATES,
+    queueLicenseDelivery:  queueLicenseDelivery,
+    queueSupportRecovery:  queueSupportRecovery,
+    processEmailQueue:     processEmailQueue,
     _renderTemplatePublic: _renderTemplate
   };
 

@@ -66,6 +66,14 @@
 @font-face{font-family:'Playfair Display Italic';src:url('../assets/fonts/PlayfairDisplay-Italic.ttf') format('truetype');font-display:swap}
 @font-face{font-family:'Corinthia';src:url('../assets/fonts/Corinthia-Regular.ttf') format('truetype');font-display:swap}
 @font-face{font-family:'Brittany Signature';src:url('../assets/fonts/BrittanySignature.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'Times New Roman';src:url('../assets/fonts/TimesNewRoman-Regular.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'Times New Roman Italic';src:url('../assets/fonts/TimesNewRoman-Italic.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'SF Pro Display Regular';src:url('../assets/fonts/SFProDisplay-Regular.otf') format('opentype');font-display:swap}
+@font-face{font-family:'SF Pro Display SemiBold';src:url('../assets/fonts/SFProDisplay-Semibold.otf') format('opentype');font-display:swap}
+@font-face{font-family:'SF Pro Display Bold';src:url('../assets/fonts/SFProDisplay-Bold.otf') format('opentype');font-display:swap}
+@font-face{font-family:'Alex Brush';src:url('../assets/fonts/AlexBrush-Regular.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'Antonio';src:url('../assets/fonts/Antonio-Variable.ttf') format('truetype');font-display:swap}
+@font-face{font-family:'Instrument Serif Regular';src:url('../assets/fonts/InstrumentSerif-Regular.ttf') format('truetype');font-display:swap}
 @font-face{font-family:'Inter Medium';src:url('../assets/fonts/Inter-Medium.ttf') format('truetype');font-display:swap}
 /* Snell Roundhand (assets/fonts/SnellRoundhand-*.ttf) is NOT declared here: Chromium's font sanitizer rejects these two files, and one rejected face keeps every caption card on '…'. They still burn fine (libass). */
 @font-face{font-family:'Georgia';src:url('../assets/fonts/Georgia.ttf') format('truetype');font-display:swap}
@@ -7420,3 +7428,8 @@ body.pv-playing .gtl-tile .gtl-score-hot { animation-play-state: paused !importa
   pointer-events: auto !important;
   white-space: nowrap !important;
 }
+
+/* [FONTS-ALL] PostScript-name aliases so the editor preview resolves the same value libass burns for the CFF OTFs. */
+@font-face{font-family:'SFProDisplay-Regular';src:url('../assets/fonts/SFProDisplay-Regular.otf') format('opentype');font-display:swap}
+@font-face{font-family:'SFProDisplay-Semibold';src:url('../assets/fonts/SFProDisplay-Semibold.otf') format('opentype');font-display:swap}
+@font-face{font-family:'SFProDisplay-Bold';src:url('../assets/fonts/SFProDisplay-Bold.otf') format('opentype');font-display:swap}

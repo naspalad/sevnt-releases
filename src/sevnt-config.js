@@ -12,7 +12,7 @@ module.exports = {
 
   // ─── License API (server required) ──────────────────────────────────────────
   LICENSE_API_ENDPOINT: process.env.SEVNT_LICENSE_API
-    || 'https://script.google.com/macros/s/AKfycbxaN2QJsscNRX7JY-Txf_GlT_cVV6KqddkB6dDhI6NtzP5lrh5yG-EquT3SPrY-D9OhXA/exec',
+    || 'https://script.google.com/macros/s/AKfycbzUNT0mkcRbiesq2cinJnijDVJtGI4gNpgvupzX9_2P5ymn4rtRzA76X4Iny53GHx7m/exec',
 
   OFFLINE_GRACE_DAYS: 7,
   REVALIDATE_INTERVAL_DAYS: 3,
@@ -37,7 +37,7 @@ module.exports = {
 
   // ─── Purchase / Store ─────────────────────────────────────────────────────────
   PURCHASE_URL: process.env.SEVNT_PURCHASE_URL
-    || 'https://sevntstudio.com/buy',                   // PLACEHOLDER
+    || 'https://sevnt.lynk.id/p/sevntstudio',
 
   // ─── Feature Flags ────────────────────────────────────────────────────────────
   ENABLE_MOBILE_COMPANION: true,

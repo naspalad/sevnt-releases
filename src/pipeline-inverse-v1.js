@@ -15434,6 +15434,7 @@ async function runPipeline({ source, sessionDir, cfg, binPaths, subtitleFile, no
     if (cfg.hookAutoBurn && String(c.title || '').trim()) {
       const HA = require('./hook-autoburn');
       const preset = cfg.hookPreset || HA.DEFAULT_PRESET;
+      HA.setHookDur(cfg.hookSec);
       try {
         // [HOOK-CENTER] User rule (2026-10-11): no face/caption avoidance — the
         // hook sits centred (movable later in the Caption Editor) and the
@@ -15448,14 +15449,14 @@ async function runPipeline({ source, sessionDir, cfg, binPaths, subtitleFile, no
           buildHookAss: (T) => buildAss([], fsz, style, yP, xP, anm, glw, [T], assFmt, cfg.subtitleFont || '', null, []),
         });
         hookTitle = placed.title;
-        if (hookTitle) log(`▶ Clip ${i+1}: hook di tengah, caption mulai setelah hook (${HA.HOOK_DUR}s).`);
+        if (hookTitle) log(`▶ Clip ${i+1}: hook di tengah, caption mulai setelah hook (${HA.getHookDur()}s).`);
         if (!hookTitle) {
           log(`⚠ Clip ${i+1}: hook judul dilewati — ${placed.reason}.`, 'yellow');
           // [TITLE-VIDEO-FX] The preset's video effect (cut-out / duotone) is
           // part of the look and must not depend on whether the TEXT fit —
           // otherwise only the clips with short titles turned pink.
           const fxId = (require('./hook-presets').byId(preset) || {}).title?.videoFx;
-          if (fxId) fxOnlyTitle = { videoFx: fxId, start: 0, end: Math.max(0.5, Math.min(HA.HOOK_DUR, c.end - c.start)) };
+          if (fxId) fxOnlyTitle = { videoFx: fxId, start: 0, end: Math.max(0.5, Math.min(HA.getHookDur(), c.end - c.start)) };
         }
       } catch (e) {
         log(`⚠ Clip ${i+1}: hook judul gagal dibuat (${e.message}) — klip tetap dibuat tanpa hook.`, 'yellow');
@@ -16246,6 +16247,12 @@ async function renderClipEdit({ srcFile, srcVideo, clipStart, clipEnd, clipForma
   // style (unlike titles), so they mirror cueList's own subIsInverse split
   // rather than being filtered per-entry like normTitles/invTitles are.
   const layerMC = layerManualCaptions(manualCaptions || []);
+  {
+    const kp = kinCapParam(cfg);
+    const msg = `[caption-burn] ${kp ? 'animasi=' + kp : 'TANPA caption animasi (cfg.captionKinetic kosong)'} cues=${mergedCueList.length} font=${style?.subtitleFont || '-'}`;
+    console.log('[renderClipEdit]', msg);
+    try { onLog && onLog(msg); } catch { /* log only */ }
+  }
   if (normalHasContent) {
     fs.writeFileSync(assNormalPath, buildAss(
       subIsInverse ? [] : mergedCueList, fsz, style?.subtitleStyle || 'neon_green',

@@ -11,7 +11,7 @@ app.whenReady().then(async () => {
     const pipe = require('../../src/pipeline-inverse-v1.js');
     const ff = require('ffmpeg-static'); const fp = require('@ffprobe-installer/ffprobe').path;
     const rep = JSON.parse(fs.readFileSync(reportFile, 'utf8')); const c = rep.clips[0];
-    const cfg = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA, 'SEVNT_Dev', 'settings.json'), 'utf8'));
+    const cfg = require('./qa-settings').createQaSettings();
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sevnt-re-'));
     const dir = path.join(tmp, 'sess', 'raw'); fs.mkdirSync(dir, { recursive: true });
     const srcFile = path.join(dir, 'clip.mp4'); fs.copyFileSync(c.rawFile || c.file, srcFile);

@@ -1,0 +1,73 @@
+name: Build SEVNT Installers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ['release/**']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: win32-x64
+            runner: windows-latest
+            script: build:win
+          - target: darwin-arm64
+            runner: macos-15
+            script: build:mac:arm64
+          - target: darwin-x64
+            runner: macos-15-intel
+            script: build:mac:x64
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - uses: astral-sh/setup-uv@v5
+
+      - name: Build bundled Python runtime
+        run: |
+          uv python install 3.11
+          PY_EXE="$(uv python find --managed-python 3.11)"
+          PY_HOME="$("$PY_EXE" -c 'import sys; print(sys.prefix)')"
+          OUT="build/engine-runtime/${{ matrix.target }}"
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          cp -a "$PY_HOME/." "$OUT/"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            PY="$OUT/python.exe"
+          else
+            PY="$OUT/bin/python3"
+            [ -x "$PY" ] || ln -s "$(basename "$(find "$OUT/bin" -maxdepth 1 -type f -name 'python3.*' | head -n 1)")" "$PY"
+          fi
+          "$PY" -c 'import pathlib,sysconfig; (pathlib.Path(sysconfig.get_path("stdlib"))/"EXTERNALLY-MANAGED").unlink(missing_ok=True)'
+          uv pip install --python "$PY" -r engine/requirements.upstream.txt
+          "$PY" -I -c "import fastapi,uvicorn,pydantic,faster_whisper,ctranslate2,av,numpy,onnxruntime,tokenizers,huggingface_hub,yt_dlp; print('Runtime OK')"
+
+      - run: npm ci
+
+      - run: npm run ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SEVNT-Installer-${{ matrix.target }}
+          path: |
+            release/*.exe
+            release/*.dmg
+          if-no-files-found: error

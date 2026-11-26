@@ -10,8 +10,7 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.commandLine.appendSwitch('disable-background-timer-throttling');
 app.setPath('userData', fs.mkdtempSync(path.join(os.tmpdir(), 'sevnt-pp-')));
 const pre = path.join(os.tmpdir(), 'sevnt-pp-preload-' + process.pid + '.js');
-const realCfg = JSON.parse(fs.readFileSync(path.join(process.env.APPDATA, 'SEVNT_Dev', 'settings.json'), 'utf8'));
-realCfg.format = 'landscape';
+const realCfg = require('./qa-settings').createQaSettings({ format: 'landscape' });
 fs.writeFileSync(pre, `
 const CFG = ${JSON.stringify(realCfg)};
 const mk = (name) => new Proxy(function () {}, {

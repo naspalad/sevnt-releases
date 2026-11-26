@@ -442,15 +442,18 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // the DOM count check above regardless of active panel, but is only
     // actually visible once the Clips page is showing again.
     await page.locator('#railClipsBtn').click();
+    // Switching panels re-layouts the gallery; on a loaded CI runner the
+    // badge's own bounding box can still be mid-settle when the click lands,
+    // so the hit-test briefly resolves to an ancestor (<main class="workspace">)
+    // instead. force:true (tried first) silently "succeeds" by clicking the
+    // wrong point and skips Playwright's own stability wait — the actual fix
+    // is to let that wait do its job, with a small head start.
+    await page.waitForTimeout(300);
     const wmBadge = page.locator('.wm-badge').first();
     await expect(wmBadge).toBeVisible();
-    // force: true — on macOS CI this absolutely-positioned badge (z-index:3,
-    // over the gallery tile's video/image) reports visible/stable but the
-    // hit-test still lands on an ancestor (<main class="workspace">), the
-    // same benign Chromium paint-order flake as the CR-04 keyframe fix above.
-    await wmBadge.click({ force: true });
+    await wmBadge.click();
     await expect(page.locator('.wm-badge').first()).toHaveClass(/wm-off/);
-    await page.locator('.wm-badge').first().click({ force: true });
+    await page.locator('.wm-badge').first().click();
     await expect(page.locator('.wm-badge').first()).not.toHaveClass(/wm-off/);
 
     // WM-06: delete stored image asset and clear configured image.
@@ -537,8 +540,10 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // studio ~600ms later (setTimeout(close)) — #csVideo only stays visible
     // when that branch isn't taken. Wait past that timer so this isn't a
     // race, then check the studio's own open/closed state rather than
-    // asserting a video element that may legitimately be gone.
-    await page.waitForTimeout(700);
+    // asserting a video element that may legitimately be gone. 1500ms (not
+    // 600ms) margin: a loaded CI runner can delay the setTimeout(close) well
+    // past its nominal 600ms, and checking too early races it mid-flight.
+    await page.waitForTimeout(1500);
     if (await page.locator('#cropStudio').isVisible()) {
       await expect(page.locator('#csVideo')).toBeVisible();
     }
@@ -596,7 +601,8 @@ test.describe('SEVNT Studio — 88 scenario renderer suite (isolated QA harness)
     // saves splitPending and self-closes the studio ~600ms later. Reopening
     // restores file2 from clip.splitPending.splitCrop (renderer.js:13070), so
     // SP-08/SP-09 still get a real, meaningful two-source state to test.
-    await page.waitForTimeout(700);
+    // 1500ms, not 600ms — same CI-runner-slowness margin as Crop Studio above.
+    await page.waitForTimeout(1500);
     if (await page.locator('#splitStudio').isHidden()) {
       await openPanel('crop');
       await page.locator('#openGamingSplitStudioBtn').click();

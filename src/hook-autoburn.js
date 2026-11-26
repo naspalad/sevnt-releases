@@ -17,11 +17,16 @@
 // the same shape the Caption Editor writes, tagged src:'headline', so the
 // editor, the "Judul & hook" review and the dashboard preview all pick it up
 // as the clip's existing headline layer.
-const { applyHookPreset, byId } = require('./hook-presets');
-const TL = require('./title-layout');
+(function (root) {
+const _node = typeof module !== 'undefined' && module.exports;
+const { applyHookPreset, byId } = _node ? require('./hook-presets') : root.HookPresets;
+const TL = _node ? require('./title-layout') : root.TitleLayout;
 
 const DEFAULT_PRESET = 'blok_neon';
 const HOOK_DUR = TL.TITLE_DEFAULT_DUR;   // 3.5s, same as "+ Add title"
+let hookDur = HOOK_DUR;   // cfg.hookSec (Clip Options); falls back to the default when unset/invalid
+function setHookDur(s) { const v = +s; hookDur = Number.isFinite(v) && v >= 1 && v <= 10 ? v : HOOK_DUR; }
+function getHookDur() { return hookDur; }
 // Canonical 1080x1920 space. The bottom band is where TikTok/Reels draw their
 // caption, buttons and progress bar; the top band holds the app's own header.
 const SAFE_TOP = 200;
@@ -143,7 +148,7 @@ function hookTextWithSub(hookText, title, presetId, caseMode = '') {
 }
 
 function makeHookTitle(text, clipDur, presetId, y = 960, fs = TL.TITLE_DEFAULT_FS) {
-  const end = Math.max(0.5, Math.min(HOOK_DUR, Number(clipDur) || HOOK_DUR));
+  const end = Math.max(0.5, Math.min(hookDur, Number(clipDur) || hookDur));
   const base = {
     id: 'ttl_hook0', src: 'headline', text, start: 0, end,
     x: TL.TITLE_DEFAULT_X, y, fs: TL.TITLE_DEFAULT_FS, style: 'white_clean', anim: 'pop', glow: true,
@@ -355,7 +360,9 @@ function placeHook({ text, clipDur, presetId, captionsAss, buildHookAss, avoid =
   return { title: null, reason: 'no_room' };
 }
 
-module.exports = {
+const api = {
   DEFAULT_PRESET, HOOK_DUR, SAFE_TOP, SAFE_BOTTOM, GAP, MIN_FS,
-  hookTextFor, hookTextWithSub, makeHookTitle, parseAss, assExtent, placeHook,
+  hookTextFor, hookTextWithSub, makeHookTitle, parseAss, assExtent, placeHook, setHookDur, getHookDur,
 };
+if (_node) module.exports = api; else root.HookAutoburn = api;
+})(typeof self !== 'undefined' ? self : this);
